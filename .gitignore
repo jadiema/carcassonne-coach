@@ -1,0 +1,29 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# --- Données de parties (Board Game Arena) ---
+# Parties exportées depuis BGA : volumineuses, et ce sont les parties d'autres joueurs.
+# Le dossier existe dans le dépôt (via .gitkeep), mais son contenu n'est pas versionné.
+parties/*
+!parties/.gitkeep
+
+# --- Résultats d'analyse, régénérables par les scripts ---
+prix_meeple.csv
+prix_meeple.png
+bayes_paysans.csv
+
+# --- Anciens modèles et sauvegardes ---
+carcassonne_model_old.pt
+*_old.pt
+*.bak
+
+# --- Éditeurs et système ---
+*.code-workspace
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

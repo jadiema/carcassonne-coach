@@ -1,0 +1,277 @@
+/* ============================================================
+   Carcassonne Coach — Injected styles
+   ============================================================ */
+
+/* Floating action button */
+#carc-coach-fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999990;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-size: 26px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  line-height: 1;
+}
+#carc-coach-fab:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(0,0,0,0.45);
+}
+#carc-coach-fab:active {
+  transform: scale(0.96);
+}
+
+/* Tooltip */
+#carc-coach-fab::after {
+  content: "Extraire l'état de la partie";
+  position: absolute;
+  right: 68px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e1e2e;
+  color: #cdd6f4;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+#carc-coach-fab:hover::after {
+  opacity: 1;
+}
+
+/* Modal overlay */
+#carc-coach-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.65);
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  animation: carc-fade-in 0.2s ease;
+}
+
+@keyframes carc-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Modal card */
+#carc-coach-modal {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 16px;
+  padding: 28px;
+  max-width: 720px;
+  width: 92%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+  animation: carc-slide-up 0.25s ease;
+}
+
+@keyframes carc-slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal header */
+#carc-coach-modal .carc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+#carc-coach-modal .carc-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+}
+
+#carc-coach-modal .carc-subtitle {
+  font-size: 13px;
+  color: #a6adc8;
+  margin: 6px 0 0;
+  line-height: 1.5;
+}
+
+/* Stats row */
+#carc-coach-modal .carc-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+#carc-coach-modal .carc-stat {
+  background: #313244;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#carc-coach-modal .carc-stat-value {
+  font-weight: 600;
+  color: #89b4fa;
+}
+
+/* Textarea */
+#carc-coach-modal .carc-json {
+  flex: 1;
+  min-height: 240px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #11111b;
+  color: #a6e3a1;
+  border: 1px solid #313244;
+  font-family: "Cascadia Code", "Fira Code", "JetBrains Mono", monospace;
+  font-size: 11px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  margin-bottom: 16px;
+}
+
+#carc-coach-modal .carc-json:focus {
+  border-color: #89b4fa;
+}
+
+/* Button row */
+#carc-coach-modal .carc-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+#carc-coach-modal .carc-btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: transform 0.1s, opacity 0.1s;
+}
+
+#carc-coach-modal .carc-btn:active {
+  transform: scale(0.97);
+}
+
+#carc-coach-modal .carc-btn-primary {
+  background: #89b4fa;
+  color: #1e1e2e;
+}
+#carc-coach-modal .carc-btn-primary:hover {
+  opacity: 0.9;
+}
+
+#carc-coach-modal .carc-btn-success {
+  background: #a6e3a1;
+  color: #1e1e2e;
+}
+
+#carc-coach-modal .carc-btn-secondary {
+  background: transparent;
+  border: 1px solid #45475a;
+  color: #cdd6f4;
+}
+#carc-coach-modal .carc-btn-secondary:hover {
+  background: #313244;
+}
+
+/* Error state */
+#carc-coach-modal .carc-error,
+#carc-coach-overlay .carc-error {
+  background: #45283c;
+  color: #f38ba8;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Panel-mode stats (sans #carc-coach-modal) */
+#carc-coach-overlay .carc-stats {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+#carc-coach-overlay .carc-stat {
+  background: #313244;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#carc-coach-overlay .carc-stat-value {
+  font-weight: 600;
+  color: #89b4fa;
+}
+
+#carc-coach-overlay .carc-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+#carc-coach-overlay .carc-btn-primary {
+  background: #89b4fa;
+  color: #1e1e2e;
+}
+
+#carc-coach-overlay .carc-btn-secondary {
+  background: transparent;
+  border: 1px solid #45475a;
+  color: #cdd6f4;
+}
+
+#carc-coach-overlay .carc-json {
+  width: 100%;
+  min-height: 150px;
+  padding: 10px;
+  border-radius: 8px;
+  background: #11111b;
+  color: #a6e3a1;
+  border: 1px solid #313244;
+  font-family: "Cascadia Code", "Fira Code", monospace;
+  font-size: 10px;
+  resize: vertical;
+  outline: none;
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
+/* Coach highlight animation */
+@keyframes carc-pulse {
+  0%, 100% { opacity: 1; border-color: #89b4fa; }
+  50% { opacity: 0.5; border-color: #b4d0fb; }
+}

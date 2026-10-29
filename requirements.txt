@@ -1,0 +1,11 @@
+# Serveur local du coach
+flask>=3.0
+flask-cors>=4.0
+waitress>=3.0
+
+# Moteur et réseau de neurones
+numpy>=1.26
+torch>=2.2          # version CPU suffisante : https://pytorch.org/get-started/locally/
+
+# Scripts d'analyse (facultatif : courbe de prix_meeple.py)
+matplotlib>=3.8

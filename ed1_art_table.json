@@ -1,0 +1,147 @@
+{
+"4.545454545454546 33.333333333333336": [
+"FFFF",
+false,
+"Monastère"
+],
+"72.72727272727273 0": [
+"RFRF",
+false,
+"Route droite"
+],
+"59.09090909090909 0": [
+"CRRF",
+false,
+"Ville + virage route gauche"
+],
+"40.90909090909091 0": [
+"CFCF",
+false,
+"Ville 2 côtés adjacents séparés"
+],
+"45.45454545454545 0": [
+"CFFF",
+false,
+"Ville 1 côté"
+],
+"22.727272727272727 33.333333333333336": [
+"CCFC",
+true,
+"Ville 3 côtés (blason)"
+],
+"50 0": [
+"CFFF",
+false,
+"Ville 1 côté"
+],
+"86.36363636363636 0": [
+"FFRR",
+false,
+"Virage route"
+],
+"9.090909090909092 0": [
+"CFFC",
+false,
+"Ville angle"
+],
+"4.545454545454546 0": [
+"CCRC",
+true,
+"Ville 3 côtés + route bas (blason)"
+],
+"22.727272727272727 0": [
+"CRRC",
+true,
+"Ville angle + route (blason)"
+],
+"0 0": [
+"CCRC",
+false,
+"Ville 3 côtés + route bas"
+],
+"13.636363636363637 0": [
+"CFFC",
+true,
+"Ville angle (blason)"
+],
+"63.63636363636363 0": [
+"CRRR",
+false,
+"Ville + carrefour 3 routes"
+],
+"77.27272727272727 0": [
+"RFRF",
+false,
+"Route droite"
+],
+"90.9090909090909 0": [
+"FFRR",
+false,
+"Virage route"
+],
+"100 0": [
+"FRRR",
+false,
+"Carrefour 3 routes"
+],
+"31.818181818181817 0": [
+"FCFC",
+true,
+"Ville 2 côtés opposés (blason)"
+],
+"13.636363636363637 33.333333333333336": [
+"CCCC",
+true,
+"Ville 4 côtés (blason)"
+],
+"81.81818181818181 0": [
+"FFRR",
+false,
+"Virage route"
+],
+"54.54545454545455 0": [
+"CFRR",
+false,
+"Ville + virage route droite"
+],
+"9.090909090909092 33.333333333333336": [
+"FFRF",
+false,
+"Monastère + route"
+],
+"18.181818181818183 33.333333333333336": [
+"CCFC",
+false,
+"Ville 3 côtés"
+],
+"27.272727272727273 0": [
+"FCFC",
+false,
+"Ville 2 côtés opposés"
+],
+"36.36363636363637 0": [
+"CFFC",
+false,
+"Ville 2 côtés adjacents séparés"
+],
+"18.181818181818183 0": [
+"CRRC",
+false,
+"Ville angle + route"
+],
+"95.45454545454545 0": [
+"FRRR",
+false,
+"Carrefour 3 routes"
+],
+"68.18181818181819 0": [
+"CRFR",
+false,
+"Ville + route traversante"
+],
+"0 33.333333333333336": [
+"RRRR",
+false,
+"Carrefour 4 routes"
+]
+}
