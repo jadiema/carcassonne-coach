@@ -457,12 +457,16 @@
   // SERVER COMMUNICATION (via background script)
   // ============================================================
 
-  async function checkServer() {
+  // Moteur disponible : « serveur » (start_server.bat lancé, le plus rapide)
+  // ou « navigateur » (intégré à l'extension, rien à installer).
+  async function checkEngine() {
     try {
       const response = await browser.runtime.sendMessage({ type: "health" });
-      return response && response.ok;
-    } catch { return false; }
+      if (!response || !response.ok) return null;
+      return (response.data && response.data.engine) || "serveur";
+    } catch { return null; }
   }
+  async function checkServer() { return (await checkEngine()) !== null; }
 
   // ============================================================
   // CADRE D'USAGE — analyse réservée aux parties terminées et aux replays
@@ -720,28 +724,30 @@
     const serverLabel = document.createElement("span");
     serverLabel.id = "carc-server-label";
     serverLabel.style.cssText = "font-size:12px;color:#6c7086;";
-    serverLabel.textContent = "Serveur : vérification...";
+    serverLabel.textContent = "Moteur : vérification...";
     serverRow.append(serverDot, serverLabel);
 
-    // Vérifier le serveur automatiquement
-    checkServer().then(up => {
+    // Moteur utilisé : serveur local s'il est lancé, sinon le navigateur
+    checkEngine().then(engine => {
       const dot = document.getElementById("carc-server-dot");
       const label = document.getElementById("carc-server-label");
-      if (dot && label) {
-        if (up) {
-          dot.style.background = "#a6e3a1";
-          label.style.color = "#a6e3a1";
-          label.textContent = "Serveur : connecté ✓";
-        } else {
-          dot.style.background = "#f38ba8";
-          label.style.color = "#f38ba8";
-          label.textContent = "Serveur : déconnecté";
-
-          const pathRow = document.createElement("div");
-          pathRow.style.cssText = "width:100%;margin-top:6px;font-size:11px;color:#a6adc8;line-height:1.6;";
-          pathRow.innerHTML = `Double-cliquez <strong>start_server.bat</strong> dans le dossier de l'extension.`;
-          serverRow.append(pathRow);
-        }
+      if (!dot || !label) return;
+      if (engine === "serveur") {
+        dot.style.background = "#a6e3a1";
+        label.style.color = "#a6e3a1";
+        label.textContent = "Moteur : serveur local (rapide) ✓";
+      } else if (engine === "navigateur") {
+        dot.style.background = "#89b4fa";
+        label.style.color = "#89b4fa";
+        label.textContent = "Moteur : intégré au navigateur ✓";
+        const note = document.createElement("div");
+        note.style.cssText = "width:100%;margin-top:4px;font-size:11px;color:#a6adc8;line-height:1.5;";
+        note.textContent = "Première analyse : quelques secondes de chargement du moteur.";
+        serverRow.append(note);
+      } else {
+        dot.style.background = "#f38ba8";
+        label.style.color = "#f38ba8";
+        label.textContent = "Moteur : indisponible — rechargez la page";
       }
     });
 
@@ -815,8 +821,7 @@
       const serverUp = await checkServer();
       if (!serverUp) {
         resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">
-          Serveur non lancé.<br>
-          Lancez <code style="background:#11111b;padding:2px 6px;border-radius:4px;font-size:11px">start_server.bat</code>
+          Moteur indisponible. Rechargez la page (F5), puis relancez l'analyse.
         </div>`;
         analyzeBtn.disabled = false;
         analyzeBtn.textContent = "🔍 Analyser";

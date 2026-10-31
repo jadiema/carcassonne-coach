@@ -1,0 +1,4 @@
+Pyodide 0.26.4 (https://pyodide.org, licence MPL 2.0) : Python 3.12 compilé en
+WebAssembly, avec NumPy 1.26.4 (licence BSD). Fichiers officiels de la
+distribution, non modifiés, embarqués pour que le coach fonctionne sans serveur
+ni installation de Python. Source : https://github.com/pyodide/pyodide/releases/tag/0.26.4

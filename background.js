@@ -1,19 +1,52 @@
 // ============================================================
-// 🏰 Carcassonne Coach — Background Script v8
+// 🏰 carcassonne-coach — Background Script v9
 // ============================================================
-// Toutes les requêtes sont courtes (< 2s).
-// L'analyse longue est gérée par polling côté content script.
+// Deux moteurs, même interface pour le content script :
+//   • serveur local (start_server.bat) s'il est lancé : le plus rapide ;
+//   • sinon, le moteur intégré au navigateur (engine_worker.js), sans rien installer.
+// L'analyse longue est suivie par polling côté content script (toutes les 2 s),
+// ce qui garde aussi le script d'arrière-plan actif pendant le calcul.
 // ============================================================
 
 const SERVER_URL = "http://127.0.0.1:5555";
 
+let worker = null;
+const browserJobs = {};
+
+function ensureWorker() {
+  if (worker) return worker;
+  worker = new Worker(browser.runtime.getURL("engine_worker.js"));
+  worker.onmessage = (e) => {
+    const { id, ...rest } = e.data;
+    browserJobs[id] = rest;
+  };
+  worker.onerror = (e) => {
+    for (const id of Object.keys(browserJobs)) {
+      if (browserJobs[id].status === "running") {
+        browserJobs[id] = { status: "error", error: "Moteur du navigateur : " + (e.message || "erreur") };
+      }
+    }
+    worker = null;
+  };
+  return worker;
+}
+
+async function serverHealth() {
+  try {
+    const r = await fetch(SERVER_URL + "/health", { signal: AbortSignal.timeout(1500) });
+    return r.ok ? await r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "health") {
-    fetch(SERVER_URL + "/health", { signal: AbortSignal.timeout(3000) })
-      .then(r => r.json())
-      .then(data => sendResponse({ ok: true, data }))
-      .catch(err => sendResponse({ ok: false, error: err.message }));
+    serverHealth().then(data => {
+      if (data) sendResponse({ ok: true, data: { ...data, engine: "serveur" } });
+      else sendResponse({ ok: true, data: { status: "ok", engine: "navigateur" } });
+    });
     return true;
   }
 
@@ -27,20 +60,43 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Lancer une analyse (retour immédiat avec job_id)
   if (message.type === "start-analysis") {
-    fetch(SERVER_URL + "/analyze?sims=" + message.sims + "&time=" + message.time + "&player=" + message.player, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message.state),
-      signal: AbortSignal.timeout(10000),
-    })
-      .then(r => r.json())
-      .then(data => sendResponse({ ok: true, data }))
-      .catch(err => sendResponse({ ok: false, error: err.message }));
+    serverHealth().then(up => {
+      if (up) {
+        fetch(SERVER_URL + "/analyze?sims=" + message.sims + "&time=" + message.time + "&player=" + message.player, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(message.state),
+          signal: AbortSignal.timeout(10000),
+        })
+          .then(r => r.json())
+          .then(data => sendResponse({ ok: true, data }))
+          .catch(err => sendResponse({ ok: false, error: err.message }));
+        return;
+      }
+      const id = Math.random().toString(36).slice(2, 10);
+      browserJobs[id] = { status: "running", started: Date.now(), time_limit: message.time };
+      ensureWorker().postMessage({ id, state: message.state, sims: message.sims,
+                                   time: message.time, player: message.player });
+      sendResponse({ ok: true, data: { job_id: "nav-" + id, status: "running" } });
+    });
     return true;
   }
 
   // Polling du résultat (retour immédiat)
   if (message.type === "poll-result") {
+    if (message.jobId && message.jobId.startsWith("nav-")) {
+      const job = browserJobs[message.jobId.slice(4)];
+      if (!job) { sendResponse({ ok: true, data: { status: "not_found" } }); return; }
+      if (job.status === "running") {
+        sendResponse({ ok: true, data: { status: "running",
+                                         elapsed: Math.round((Date.now() - job.started) / 100) / 10,
+                                         time_limit: job.time_limit } });
+      } else {
+        sendResponse({ ok: true, data: job });
+        if (job.status !== "running") delete browserJobs[message.jobId.slice(4)];
+      }
+      return;
+    }
     fetch(SERVER_URL + "/result/" + message.jobId, { signal: AbortSignal.timeout(5000) })
       .then(r => r.json())
       .then(data => sendResponse({ ok: true, data }))
