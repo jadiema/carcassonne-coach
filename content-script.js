@@ -470,20 +470,39 @@
   // Conseiller pendant une partie en cours serait contraire aux règles de
   // Board Game Arena. Le coach est un outil d'étude : il n'analyse qu'une
   // partie terminée (« Fin de la partie » dans le journal) ou un replay.
+  const REPLAY_URL = /\/tablereplay\b|\/archive\/replay\/|[?&]replay=|\/replay\b/i;
+
+  function isReplay() {
+    // 1. adresse de la page, ou de la page parente si le plateau est dans un cadre
+    const urls = [location.href];
+    try { urls.push(window.top.location.href); } catch (e) {}
+    if (urls.some(u => u && REPLAY_URL.test(u))) return true;
+    // 2. variable de BGA en mode replay (accessible depuis l'extension sous Firefox)
+    try {
+      const page = window.wrappedJSObject || window;
+      if (page.g_archive_mode) return true;
+    } catch (e) {}
+    // 3. commandes de replay présentes dans la page (ou la page parente)
+    const docs = [document];
+    try { if (window.top.document) docs.push(window.top.document); } catch (e) {}
+    return docs.some(d => d.querySelector("#archivecontrol"));
+  }
+
   function analysisAllowed() {
-    // Replays BGA : /tablereplay?table=… (lien « Revoir la partie ») ou /archive/replay/…
-    if (/\/tablereplay\b|\/archive\/replay\/|[?&]replay=|\/replay\b/i.test(location.href)) {
-      return { ok: true };
-    }
+    if (isReplay()) return { ok: true };
     const logs = document.getElementById("logs");
     if (logs && /Fin de la partie|End of game/.test(logs.textContent)) {
       return { ok: true };
     }
+    let top = "";
+    try { top = window.top.location.pathname; } catch (e) { top = "(inaccessible)"; }
     return {
       ok: false,
       reason: "Le coach analyse les parties <strong>terminées</strong> et les <strong>replays</strong> " +
               "uniquement, conformément aux règles de Board Game Arena.<br>" +
-              "Revenez à la fin de la partie, ou ouvrez son replay.",
+              "Revenez à la fin de la partie, ou ouvrez son replay." +
+              `<div style="margin-top:8px;font-size:10px;color:#7f849c">diagnostic : ${location.pathname}` +
+              ` · parent ${top}</div>`,
     };
   }
 
