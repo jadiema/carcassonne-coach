@@ -471,7 +471,8 @@
   // Board Game Arena. Le coach est un outil d'étude : il n'analyse qu'une
   // partie terminée (« Fin de la partie » dans le journal) ou un replay.
   function analysisAllowed() {
-    if (/\/archive\/replay\/|[?&]replay=|\/replay\b/i.test(location.href)) {
+    // Replays BGA : /tablereplay?table=… (lien « Revoir la partie ») ou /archive/replay/…
+    if (/\/tablereplay\b|\/archive\/replay\/|[?&]replay=|\/replay\b/i.test(location.href)) {
       return { ok: true };
     }
     const logs = document.getElementById("logs");
