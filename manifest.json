@@ -1,6 +1,6 @@
 {
   "name": "Carcassonne Coach — BGA Analyzer",
-  "description": "Extrait l'état d'une partie Carcassonne sur BGA pour analyse tactique post-partie.",
+  "description": "Analyse vos parties terminées et vos replays de Carcassonne sur Board Game Arena. Projet indépendant, sans lien avec Hans im Glück ni Board Game Arena.",
   "version": "2.1.0",
   "manifest_version": 3,
   "permissions": [
@@ -41,7 +41,7 @@
   ],
   "browser_specific_settings": {
     "gecko": {
-      "id": "carcassonne-coach@votre-email.com",
+      "id": "jgrisolia@free.fr",
       "strict_min_version": "109.0"
     }
   }

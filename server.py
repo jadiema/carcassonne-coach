@@ -14,7 +14,18 @@ import uuid
 import os
 
 app = Flask(__name__)
-CORS(app)
+# Seule l'extension peut appeler le serveur local : une page web quelconque
+# ouverte dans le navigateur ne doit pas pouvoir lancer d'analyse ni ouvrir
+# le dossier du coach (CORS seul n'empêche pas l'exécution d'une requête).
+_EXT_ORIGINS = ("moz-extension://", "chrome-extension://")
+CORS(app, origins=[r"moz-extension://.*", r"chrome-extension://.*"])
+
+
+@app.before_request
+def _only_extension():
+    origin = request.headers.get("Origin")
+    if origin and not origin.startswith(_EXT_ORIGINS):
+        return jsonify({"error": "origine non autorisée"}), 403
 
 # Stockage des jobs en mémoire
 jobs = {}

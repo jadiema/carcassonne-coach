@@ -7,7 +7,7 @@ echo.
 echo   Dossier: %CD%
 echo.
 echo Installation des dependances...
-pip install flask flask-cors waitress --quiet
+pip install -r requirements.txt --quiet
 echo.
 echo Lancement du serveur sur http://localhost:5555
 echo Laissez cette fenetre ouverte pendant que vous jouez.

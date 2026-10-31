@@ -464,6 +464,28 @@
     } catch { return false; }
   }
 
+  // ============================================================
+  // CADRE D'USAGE — analyse réservée aux parties terminées et aux replays
+  // ============================================================
+  // Conseiller pendant une partie en cours serait contraire aux règles de
+  // Board Game Arena. Le coach est un outil d'étude : il n'analyse qu'une
+  // partie terminée (« Fin de la partie » dans le journal) ou un replay.
+  function analysisAllowed() {
+    if (/\/archive\/replay\/|[?&]replay=|\/replay\b/i.test(location.href)) {
+      return { ok: true };
+    }
+    const logs = document.getElementById("logs");
+    if (logs && /Fin de la partie|End of game/.test(logs.textContent)) {
+      return { ok: true };
+    }
+    return {
+      ok: false,
+      reason: "Le coach analyse les parties <strong>terminées</strong> et les <strong>replays</strong> " +
+              "uniquement, conformément aux règles de Board Game Arena.<br>" +
+              "Revenez à la fin de la partie, ou ouvrez son replay.",
+    };
+  }
+
   async function requestAnalysis(state, sims = 1000, timeSec = 10, playerIdx = 0) {
     // 1. Lancer l'analyse (retour immédiat avec job_id)
     const startResp = await browser.runtime.sendMessage({
@@ -513,6 +535,58 @@
   // ============================================================
   // UI — Panneau latéral déplaçable
   // ============================================================
+  // ============================================================
+  // AVERTISSEMENT (repris du livre « Le jeu Carcassonne autrement », annexe C)
+  // ============================================================
+  const DISCLAIMER_KEY = "carcCoachDisclaimerSeen";
+
+  function buildDisclaimer(onClose) {
+    const box = document.createElement("div");
+    box.id = "carc-disclaimer";
+    box.style.cssText = `
+      margin: 0 0 12px; padding: 12px 14px; border-radius: 10px;
+      background: #2a2430; border: 1px solid #f9a85a; font-size: 12.5px; line-height: 1.45;
+    `;
+    box.innerHTML = `
+      <div style="font-weight:700;color:#f9a85a;margin-bottom:6px">⚠ AVERTISSEMENT</div>
+      <div style="margin-bottom:10px">
+        Le carcassonne-coach est un outil d’apprentissage, conçu uniquement pour vous aider
+        à progresser. Il ne doit en aucun cas être utilisé pendant une partie classée, ni
+        pendant une partie en cours contre d’autres joueurs qui n’en sont pas informés.
+        Se faire conseiller par une machine en cours de partie, c’est tricher. C’est
+        contraire au fair-play et aux règles des sites de jeu en ligne. Servez-vous-en pour
+        relire vos parties terminées et leurs replays, ou analyser une position après coup.
+      </div>
+      <div style="font-weight:700;color:#f9a85a;margin-bottom:6px">⚠ SON NIVEAU ACTUEL</div>
+      <div style="margin-bottom:10px">
+        Le carcassonne-coach reste un outil d’apprentissage. À ce jour, ses conseils
+        n’atteignent pas le niveau des joueurs Maîtres de Board Game Arena, classés au-dessus
+        de 700 points Elo, ni probablement celui des joueurs classés au-dessus de 600.
+        Je continue cependant de l’améliorer jour après jour : peut-être deviendra-t-il un
+        jour, lui aussi, un maître de Carcassonne.
+      </div>
+      <div style="font-size:11px;color:#a6adc8;margin-bottom:10px">
+        Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena.
+        Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH.
+      </div>`;
+    const ok = document.createElement("button");
+    ok.className = "carc-btn carc-btn-secondary";
+    ok.textContent = "J’ai compris";
+    ok.addEventListener("click", () => {
+      try { localStorage.setItem(DISCLAIMER_KEY, "1"); } catch {}
+      box.remove();
+      if (onClose) onClose();
+    });
+    box.append(ok);
+    return box;
+  }
+
+  function toggleDisclaimer(body) {
+    const existing = body.querySelector("#carc-disclaimer");
+    if (existing) { existing.remove(); return; }
+    body.prepend(buildDisclaimer());
+  }
+
   function showModal(state) {
     removeModal();
 
@@ -701,6 +775,11 @@
     analyzeBtn.style.cssText += "flex:1;";
     analyzeBtn.textContent = "🔍 Analyser";
     analyzeBtn.addEventListener("click", async () => {
+      const policy = analysisAllowed();
+      if (!policy.ok) {
+        resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">⏸️ ${policy.reason}</div>`;
+        return;
+      }
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = "⏳ Connexion...";
 
@@ -821,9 +900,20 @@
       }
     });
 
-    buttons.append(analyzeBtn, copyBtn, saveBtn);
+    const disclaimerBtn = document.createElement("button");
+    disclaimerBtn.className = "carc-btn carc-btn-secondary";
+    disclaimerBtn.textContent = "⚠️ DISCLAIMER";
+    disclaimerBtn.title = "Avertissement : usage et niveau du coach";
+    disclaimerBtn.style.cssText += "border-color:#f9a85a;color:#f9a85a;";
+    disclaimerBtn.addEventListener("click", () => toggleDisclaimer(body));
+
+    buttons.append(analyzeBtn, copyBtn, saveBtn, disclaimerBtn);
 
     body.append(statsHtml, playerRow, serverRow, timeRow, resultsDiv, textarea);
+    // Affiché d'office à la première ouverture du coach
+    let seen = false;
+    try { seen = localStorage.getItem(DISCLAIMER_KEY) === "1"; } catch {}
+    if (!seen) body.prepend(buildDisclaimer());
     panel.append(dragBar, body, buttons);
     document.body.append(panel);
   }

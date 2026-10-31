@@ -1,9 +1,9 @@
 # 🏰 Carcassonne Coach
 
 Un coach d’intelligence artificielle pour **Carcassonne** (jeu de base, 2 joueurs) sur **Board Game Arena** (BGA).
-Une extension Firefox lit la partie en cours ; un serveur local cherche les meilleurs coups avec une **recherche arborescente de Monte-Carlo (MCTS)** guidée par un **réseau de neurones** entraîné sur des parties de joueurs forts ; les meilleurs coups s’affichent sur le plateau.
+Une extension Firefox lit une partie **terminée** ou un **replay** (l’analyse est désactivée pendant une partie en cours, conformément aux règles de Board Game Arena) ; un serveur local cherche les meilleurs coups avec une **recherche arborescente de Monte-Carlo (MCTS)** guidée par un **réseau de neurones** entraîné sur des parties de joueurs forts ; les meilleurs coups s’affichent sur le plateau.
 
-> Projet personnel, dépôt privé. Voir [LICENSE](LICENSE).
+> Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena. Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH. Le coach ne reproduit aucune image du jeu : il lit la page de Board Game Arena dans votre navigateur.
 
 ---
 
@@ -232,3 +232,14 @@ carcassonne-coach/
 - **Vitesse** : moteur en Python pur, environ cent fois plus lent qu’un moteur compilé.
 - **Données** : le réseau progresse d’environ un point par lot de parties ajouté ; un vrai saut demanderait des milliers de parties ou de l’auto-apprentissage.
 - **Extension** : identifiant temporaire (`carcassonne-coach@votre-email.com`), à remplacer avant toute publication.
+
+---
+
+## Licence
+
+Copyright © 2026 Jérémie (Jadiema) — Éditions Jadiema
+
+Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la **GNU General Public License version 3**, telle que publiée par la Free Software Foundation. Toute version modifiée que vous distribuez doit rester sous la même licence, avec son code source.
+
+Ce programme est distribué dans l’espoir qu’il sera utile, mais **sans aucune garantie**, pas même la garantie implicite de qualité marchande ou d’adéquation à un usage particulier. Le texte complet de la licence figure dans le fichier [LICENSE](LICENSE).
+
