@@ -726,12 +726,50 @@ def generate_training_data_v2(json_path: str, augment: bool = True) -> list:
     - cible policy = case du coup joué, uniquement du point de vue de celui qui joue ;
     - augmentation ×4 par rotation du plateau.
     """
-    import carcassonne_engine as E
     import replay_bga
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
+    return _examples_from_positions(replay_bga.training_positions(data, augment=augment))
+
+
+def selfplay_states(data: dict):
+    """Rejoue une partie d'auto-jeu (selfplay.py) : liste d'états avant chaque coup.
+    Le coup cible est celui que la recherche MCTS a le plus visité."""
+    import carcassonne_engine as E
+    from copy import deepcopy
+    T = E.TILE_TYPES
+    g = E.GameState(2)
+    g.place_tile(T[data["start"]], 0, 0, 0)
+    pile = [T[m["t"]] for m in data["moves"]]
+    states = []
+    for k, m in enumerate(data["moves"]):
+        tile = T[m["t"]]
+        if m.get("discard"):
+            continue
+        best = max(m["v"], key=lambda v: v[4]) if m.get("v") else [m["x"], m["y"], m["r"], m["m"], 1]
+        snap = deepcopy(g)
+        snap.draw_pile = pile[k + 1:]
+        snap.current_tile = tile
+        snap.current_player = m["p"]
+        states.append((snap, (best[0], best[1], best[2], best[3]), m["p"]))
+        g.place_tile(tile, m["x"], m["y"], m["r"], m["p"] if m["m"] else None, m["m"])
+    return states
+
+
+def generate_training_data_selfplay(json_path: str, augment: bool = True) -> list:
+    """Exemples tirés d'une partie jouée par le coach contre lui-même."""
+    import replay_bga
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return _examples_from_positions(
+        replay_bga.positions_from_states(selfplay_states(data), data["final_scores"], augment))
+
+
+def _examples_from_positions(positions) -> list:
+    """Encode des positions d'entraînement (rejeu BGA ou auto-jeu) en exemples."""
+    import carcassonne_engine as E
     examples = []
-    for pos in replay_bga.training_positions(data, augment=augment):
+    for pos in positions:
         st, mover, (mx, my, mrot, _) = pos["state"], pos["mover"], pos["move"]
         # v28 : contrôle de cohérence de la rotation cible. Le coup (x, y, rot)
         # doit être une pose légale de la tuile courante DANS l'état fourni
@@ -1015,7 +1053,8 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     all_labels = []
     all_policies = []
 
-    json_files = list(Path(data_dir).glob("*.json"))
+    # Parties humaines (dossier) + parties d'auto-jeu (sous-dossier selfplay/)
+    json_files = list(Path(data_dir).glob("*.json")) + list(Path(data_dir).glob("selfplay/*.json"))
     print(f"  Fichiers trouvés: {len(json_files)}")
 
     skipped_equal = 0
@@ -1023,6 +1062,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     skipped_error = 0
     skipped_legacy = 0
     n_v2 = 0
+    n_selfplay = 0
     n_legacy = 0
     all_games = []
 
@@ -1045,7 +1085,10 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
                 skipped_zero += 1
                 continue
 
-            if check_data.get("rawLog"):
+            if check_data.get("selfplay"):
+                examples = generate_training_data_selfplay(str(jf))
+                n_selfplay += 1
+            elif check_data.get("rawLog"):
                 examples = generate_training_data_v2(str(jf))
                 n_v2 += 1
             elif legacy:
@@ -1065,6 +1108,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
             skipped_error += 1
 
     print(f"  Parties rejouées exactement (rawLog): {n_v2}")
+    print(f"  Parties d'auto-jeu (selfplay/): {n_selfplay}")
     if legacy:
         print(f"  Anciens exports utilisés pour la policy seule: {n_legacy}")
     elif skipped_legacy:
@@ -1109,7 +1153,9 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
 
     # Validation : 10 % des PARTIES mises de côté (jamais vues à l'entraînement)
     import random as _r
-    games = sorted(set(all_games)); _r.Random(0).shuffle(games)
+    # Les parties d'auto-jeu (sp_*.json) ne vont jamais en validation : l'examen
+    # reste « retrouver le coup d'un joueur fort ».
+    games = sorted(g for g in set(all_games) if not g.startswith("sp_")); _r.Random(0).shuffle(games)
     val_games = set(games[:max(1, len(games) // 10)]) if len(games) >= 5 else set()
     # v27 : validation FIGÉE. Si une liste de validation existe déjà (fichier
     # <modèle>.validation.json), on reprend exactement ces parties : ajouter des

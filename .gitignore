@@ -27,3 +27,6 @@ carcassonne_model_old.pt
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Parties d’auto-jeu (générées par selfplay.py)
+parties/selfplay/

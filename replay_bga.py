@@ -420,6 +420,12 @@ def training_positions(data: dict, augment: bool = True):
     Avec augment=True, chaque position est fournie sous ses 4 rotations.
     """
     G, states, _ = replay(data)
+    yield from positions_from_states(states, G["final_scores"], augment)
+
+
+def positions_from_states(states, final_scores, augment: bool = True):
+    """Positions d'entraînement (×4 rotations si augment) à partir d'une liste
+    (état avant le coup, (x, y, rot, spot), joueur) — rejeu BGA ou auto-jeu."""
     for state, (x, y, rot, spot), mover in states:
         for k in (range(4) if augment else [0]):
             s = rotate_state(state, k)
@@ -432,4 +438,4 @@ def training_positions(data: dict, augment: bool = True):
             elif spot and spot.startswith("field_"):
                 mspot = f"field_{(int(spot.split('_')[1]) + 2 * k) % 8}"
             yield dict(state=s, mover=mover, move=(mx, my, (rot + k) % 4, mspot),
-                       final=G["final_scores"])
+                       final=final_scores)

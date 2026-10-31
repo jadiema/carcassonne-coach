@@ -187,8 +187,15 @@ def _segment_city_sides(edges: str, seg) -> set:
 
 
 def tile_field_segments(tile) -> list:
-    """Segments de champ d'une PlacedTile (repère tourné)."""
-    return _compute_field_segments(tile.edges, tile.connected_city)
+    """Segments de champ d'une PlacedTile (repère tourné), mis en cache par tuile."""
+    d = getattr(tile, "__dict__", None)
+    if d is None:
+        return _compute_field_segments(tile.edges, tile.connected_city)
+    c = d.get("_fs")
+    if c is None or c[0] != tile.rotation:
+        c = (tile.rotation, _compute_field_segments(tile.edges, tile.connected_city))
+        d["_fs"] = c
+    return c[1]
 
 
 def _farmer_segment(tile):
@@ -328,14 +335,24 @@ class PlacedTile:
 
     @property
     def edges(self) -> str:
-        return rotate_edges(self.tile_type.edges, self.rotation)
+        # v31 : bords mis en cache (recalculés seulement si la rotation change)
+        c = self.__dict__.get("_ec")
+        if c is None or c[0] != self.rotation:
+            c = (self.rotation, rotate_edges(self.tile_type.edges, self.rotation))
+            self.__dict__["_ec"] = c
+        return c[1]
 
     def edge(self, direction: int) -> str:
         return self.edges[direction]
 
     @property
     def connected_city(self) -> list:
-        return rotate_connected_city(self.tile_type.connected_city, self.rotation)
+        # v31 : mis en cache comme les bords (ne pas modifier la liste renvoyée)
+        c = self.__dict__.get("_cc")
+        if c is None or c[0] != self.rotation:
+            c = (self.rotation, rotate_connected_city(self.tile_type.connected_city, self.rotation))
+            self.__dict__["_cc"] = c
+        return c[1]
 
 
 # ============================================================
@@ -352,6 +369,27 @@ class GameState:
         self.current_player = 0
         self.current_tile: Optional[TileType] = None
         self.valid_positions: Optional[set] = None  # positions BGA (premier coup seulement)
+
+    def __deepcopy__(self, memo):
+        """v31 : copie rapide. Les types de tuiles (TileType) ne changent jamais :
+        on les partage au lieu de les dupliquer ; seules les parties modifiables
+        de l'état (plateau, scores, meeples, pioche…) sont copiées."""
+        from copy import copy as _copy, deepcopy as _deepcopy
+        new = GameState.__new__(GameState)
+        memo[id(self)] = new
+        for k, v in self.__dict__.items():
+            if k == "board":
+                v = {pos: _copy(t) for pos, t in v.items()}
+            elif k in ("draw_pile", "scores", "meeples", "player_names"):
+                v = list(v)
+            elif k == "valid_positions":
+                v = set(v) if v is not None else None
+            elif k == "current_tile" or isinstance(v, (int, float, str, bool, type(None))):
+                pass
+            else:
+                v = _deepcopy(v, memo)
+            new.__dict__[k] = v
+        return new
 
     def init_draw_pile(self):
         """Initialise la pioche avec toutes les tuiles (moins celles posées)."""
@@ -421,10 +459,27 @@ class GameState:
                 seen_edges.add(edges)
                 distinct_rotations.append(rot)
 
+        # v31 : bords exigés par les voisins calculés une fois par case, puis
+        # comparés à chaque rotation (même résultat que can_place, 3× plus vite)
+        rots = [(rot, rotate_edges(tile_type.edges, rot)) for rot in distinct_rotations]
+        board = self.board
+        first = not board
         for pos in self.get_open_positions():
             x, y = pos
-            for rot in distinct_rotations:
-                if self.can_place(tile_type, x, y, rot):
+            if pos in board:
+                continue
+            req = []
+            for d in (TOP, RIGHT, BOTTOM, LEFT):
+                adj = board.get((x + DX[d], y + DY[d]))
+                if adj is not None:
+                    req.append((d, adj.edges[OPPOSITE[d]]))
+            if not req and not (first and x == 0 and y == 0):
+                continue
+            for rot, e in rots:
+                for d, v in req:
+                    if e[d] != v:
+                        break
+                else:
                     placements.append((x, y, rot))
         return placements
 
