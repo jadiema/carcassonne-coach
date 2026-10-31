@@ -1,0 +1,27 @@
+Notes pour les vérificateurs de Mozilla (addons.mozilla.org)
+À coller, en anglais, dans « Notes pour les réviseurs » à chaque nouvelle version.
+--------------------------------------------------------------------------------
+
+carcassonne-coach analyses finished games and replays of Carcassonne on Board Game Arena
+(analysis is disabled during games in progress). All computation runs locally; no data is
+collected or sent anywhere. The only network access is an optional local server
+(127.0.0.1:5555) used for faster analysis when the user runs it.
+
+The engine (carcassonne_engine.py, browser_coach.py, neural_evaluator.py, torch_free.py:
+plain, unminified Python) runs in a Web Worker through Pyodide.
+
+Third-party code, unmodified, from the official Pyodide 0.26.4 release:
+https://github.com/pyodide/pyodide/releases/tag/0.26.4 (pyodide-0.26.4.tar.bz2)
+- pyodide/pyodide.js, pyodide.asm.js, pyodide.asm.wasm, python_stdlib.zip, pyodide-lock.json
+- pyodide/numpy-1.26.4-cp312-cp312-pyodide_2024_0_wasm32.whl
+The eval warnings come from Emscripten-generated code in pyodide.asm.js. 'wasm-unsafe-eval'
+is required to compile the WebAssembly runtime.
+
+carcassonne_model.pt contains only neural-network weights (numbers), read in Python with
+NumPy; it contains no executable code. Source code: https://github.com/jadiema/carcassonne-coach
+(GPL v3).
+
+How to test: create a free Board Game Arena account, open the replay of any finished
+Carcassonne game (game page > "Replay"), click the 🏰 button at the bottom right,
+then "Analyser". Recommended moves are highlighted on the board after 15 seconds.
+During a game in progress, analysis is intentionally blocked.
