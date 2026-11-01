@@ -48,13 +48,19 @@ python evaluate_model.py parties --step 2          # banc de test : top1/top3 vs
 python verify_torch_free.py parties                # réseau NumPy = réseau PyTorch
 ```
 
-## État actuel (v31)
+## État actuel (v32)
 
-- Réseau v28 entraîné sur 401 parties de joueurs forts : 35,1 % top1 / 61,9 % top3
-  (coup complet), contre 25,8 % / 42,7 % pour l'heuristique seule.
-- v31 : moteur 2 à 6 fois plus rapide (caches par tuile), auto-jeu en place.
-- Prochaines étapes : nuits d'auto-jeu, puis entraînement mélangé et comparaison des
-  versions ; version 3.0.1 de l'extension avec `update_url` ; dépôt rendu public à la
-  sortie du livre (licence GPL v3), avec la release `v3.0.0` (brouillon) et son `.xpi` signé.
+- Réseau v28 entraîné sur 401 parties de joueurs forts.
+- v31 : moteur 2 à 6 fois plus rapide (caches par tuile), auto-jeu en place (`selfplay.py`).
+- v32 : le MCTS classe les coups par **nombre de visites** (et non par taux de victoire), et
+  la valeur d'un meeple en réserve suit le **prix du meeple** du chapitre 8 du livre
+  (λ = 0,4 à 2,4 point par tour bloqué selon la réserve). Accord avec les joueurs forts,
+  387 positions, 300 simulations, coup complet : 12,7 % → 25,1 % (top1), 27,1 % → 41,1 % (top3).
+  Auto-jeu : score moyen 45 → 95 points (joueurs forts : 91).
+- Les parties d'auto-jeu générées avec la v31 sont à écarter de l'entraînement
+  (`parties/selfplay_v31/`, non lu par `train`).
+- `bench_mcts.py` : banc de test du MCTS (top1/top3 contre les coups des joueurs forts).
+- Prochaines étapes : auto-jeu v32, entraînement mélangé, version 3.0.1 de l'extension
+  (moteur v32 + `update_url`) à faire signer ; dépôt public à la sortie du livre.
 
 PC de développement : Intel i7-7700 (4 cœurs), 32 Go de RAM, NVIDIA Quadro P2000, Windows.

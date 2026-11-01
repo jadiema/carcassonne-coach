@@ -1054,6 +1054,15 @@ class MCTSNode:
         return exploit + explore
 
 
+_LAMBDA_BY_RESERVE = {0: 2.4, 1: 1.4, 2: 0.8}      # points exigés par tour bloqué
+
+
+def _reserve_value(n_meeples: int, tiles_left: int) -> float:
+    """Valeur (en points) de n meeples en réserve, d'après le chapitre 8 du livre."""
+    turns = min(9.5, tiles_left / 2)
+    return sum(_LAMBDA_BY_RESERVE.get(k, 0.4) * turns for k in range(n_meeples))
+
+
 def _evaluate_position(state: GameState, player: int) -> float:
     """
     Heuristique d'évaluation de position.
@@ -1108,8 +1117,13 @@ def _evaluate_position(state: GameState, player: int) -> float:
 
     pending_diff = pending_points[player] - pending_points[opponent]
 
-    # 3. Flexibilité meeples
-    meeple_flex = (state.meeples[player] - state.meeples[opponent]) * 0.5
+    # 3. Valeur des meeples en réserve (v32, « prix du meeple » du chapitre 8 du livre)
+    #    Un meeple bloqué coûte λ points par tour, selon la réserve (0,4 à 7 meeples
+    #    libres … 2,4 quand il n'en reste plus), pendant ≈ 9,5 tours. Le k-ième meeple
+    #    de la réserve vaut donc λ(k) × min(9,5, tours restants). (v31 : 0,5 point fixe,
+    #    presque annulé par le bonus de contrôle → le coach posait tout au début.)
+    meeple_flex = _reserve_value(state.meeples[player], len(state.draw_pile)) - \
+                  _reserve_value(state.meeples[opponent], len(state.draw_pile))
 
     # 4. Monastères en progression
     monastery_progress = 0
@@ -1120,10 +1134,8 @@ def _evaluate_position(state: GameState, player: int) -> float:
             factor = 0.3 if tile.meeple_player == player else -0.3
             monastery_progress += surrounding * factor
 
-    # 5. Bonus de contrôle territorial (avoir plus de tuiles avec meeples = contrôle)
-    my_structures = sum(1 for t in state.board.values() if t.meeple_player == player)
-    opp_structures = sum(1 for t in state.board.values() if t.meeple_player == opponent)
-    control = (my_structures - opp_structures) * 0.3
+    # 5. (v32) plus de bonus de « contrôle » par meeple posé : il rendait la pose gratuite
+    control = 0.0
 
     total = score_diff + pending_diff * 0.5 + meeple_flex + monastery_progress + control
 
@@ -1591,8 +1603,11 @@ def mcts_search(state: GameState, tile_type: TileType, player: int,
     for r in results[15:]:
         r["points_bonus"] = 0.0
 
-    # Re-trier : taux de victoire puis points pour départager
-    results.sort(key=lambda r: (r["score"], r["points_bonus"]), reverse=True)
+    # Re-trier (v32) : le coup le PLUS VISITÉ d'abord (règle du MCTS, chapitre 12 du
+    # livre), puis le taux de victoire et les points pour départager. (v31 triait par
+    # taux de victoire : un coup exploré une seule fois, sur une simulation chanceuse,
+    # passait devant celui que la recherche avait étudié des centaines de fois.)
+    results.sort(key=lambda r: (r["visits"], r["score"], r["points_bonus"]), reverse=True)
 
     # Diversifier : montrer des positions distinctes d'abord
     diversified = []
