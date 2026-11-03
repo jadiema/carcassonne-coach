@@ -756,13 +756,19 @@ def selfplay_states(data: dict):
     return states
 
 
-def generate_training_data_selfplay(json_path: str, augment: bool = True) -> list:
-    """Exemples tirés d'une partie jouée par le coach contre lui-même."""
+def generate_training_data_selfplay(json_path: str, augment: bool = True, keep: float = 1.0) -> list:
+    """Exemples tirés d'une partie jouée par le coach contre lui-même.
+    keep < 1 : n'en garde qu'une fraction, tirée au hasard (toujours la même pour
+    un fichier donné), pour que des milliers de parties tiennent en mémoire."""
+    import random as _random
     import replay_bga
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return _examples_from_positions(
-        replay_bga.positions_from_states(selfplay_states(data), data["final_scores"], augment))
+    positions = list(replay_bga.positions_from_states(selfplay_states(data), data["final_scores"], augment))
+    if keep < 1.0:
+        rng = _random.Random(Path(json_path).name)
+        positions = rng.sample(positions, max(1, round(len(positions) * keep)))
+    return _examples_from_positions(positions)
 
 
 def _examples_from_positions(positions) -> list:
@@ -1037,8 +1043,11 @@ def build_model(n_rot: int = POLICY_ROTATIONS):
 
 def train(data_dir: str, model_path: str = "carcassonne_model.pt",
           epochs: int = 100, lr: float = 0.001, legacy: bool = False,
-          value_detach: bool = True, keep_split: bool = True):
-    """Entraîne le modèle sur des parties JSON."""
+          value_detach: bool = True, keep_split: bool = True,
+          selfplay_keep: float = 0.08, selfplay_max: int = 0):
+    """Entraîne le modèle sur des parties JSON.
+    selfplay_keep : fraction des positions gardées par partie d'auto-jeu (mémoire) ;
+    selfplay_max  : nombre maximal de parties d'auto-jeu, les plus récentes (0 = toutes)."""
     import torch
     import torch.nn as nn
     from torch.utils.data import DataLoader, TensorDataset
@@ -1054,7 +1063,12 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     all_policies = []
 
     # Parties humaines (dossier) + parties d'auto-jeu (sous-dossier selfplay/)
-    json_files = list(Path(data_dir).glob("*.json")) + list(Path(data_dir).glob("selfplay/*.json"))
+    sp_files = sorted(Path(data_dir).glob("selfplay/*.json"))
+    if selfplay_max and len(sp_files) > selfplay_max:
+        sp_files = sp_files[-selfplay_max:]                 # les plus récentes
+    json_files = list(Path(data_dir).glob("*.json")) + sp_files
+    if sp_files:
+        print(f"  Auto-jeu : {len(sp_files)} parties, {selfplay_keep:.0%} des positions gardées par partie")
     print(f"  Fichiers trouvés: {len(json_files)}")
 
     skipped_equal = 0
@@ -1086,7 +1100,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
                 continue
 
             if check_data.get("selfplay"):
-                examples = generate_training_data_selfplay(str(jf))
+                examples = generate_training_data_selfplay(str(jf), keep=selfplay_keep)
                 n_selfplay += 1
             elif check_data.get("rawLog"):
                 examples = generate_training_data_v2(str(jf))
@@ -1177,7 +1191,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     from torch.utils.data import Subset
     tr_idx = torch.nonzero(tr, as_tuple=False).squeeze(1).tolist()
     dataset = Subset(TensorDataset(grids_tensor, scalars_tensor, labels_tensor, policies_tensor), tr_idx)
-    loader = DataLoader(dataset, batch_size=128, shuffle=True)
+    loader = DataLoader(dataset, batch_size=128, shuffle=True, pin_memory=torch.cuda.is_available())
     val = (grids_tensor[is_val], scalars_tensor[is_val], labels_tensor[is_val], policies_tensor[is_val])
     print(f"  Validation: {len(val_games)} parties, {int(is_val.sum())} exemples")
     # liste des parties de validation, pour evaluate_model.py
@@ -1209,7 +1223,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
         has = cell >= 0
         stats = {"n": 0, "c1": 0.0, "c3": 0.0, "f1": 0.0, "f3": 0.0, "fn": 0}
         if not has.any():
-            return torch.tensor(0.0), stats
+            return torch.zeros((), device=policy_pred.device), stats
         pp, c, r = policy_pred[has], cell[has], rot[has]
         pcell = pp.view(-1, nr, NUM_CELLS).sum(dim=1)               # (n, 625)
         known = r >= 0
@@ -1235,13 +1249,14 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
         v27 : à l'entraînement, chaque position pèse 0.25 + 0.75 × avancement
         (scalaire 7 = tuiles posées / 72) : en début de partie l'issue est presque
         imprévisible, ces positions poussent surtout à apprendre par cœur."""
+        g, sc, lab, pol = (t.to(device, non_blocking=True) for t in (g, sc, lab, pol))
         value_pred, policy_pred = model(g.float(), sc)
         w = (lab >= 0).float() * (0.25 + 0.75 * sc[:, 7:8].clamp(0, 1))
         bce = nn.functional.binary_cross_entropy(value_pred, lab.clamp(min=0), reduction="none")
         v = (bce * w).sum() / w.sum().clamp(min=1)
         pl, _ = policy_loss_sum(policy_pred, pol)
         n = int((pol[:, 0] >= 0).sum())
-        return v, (pl / max(n, 1)) if n else torch.tensor(0.0), 0.0, 0.0
+        return v, (pl / max(n, 1)) if n else torch.zeros((), device=device), 0.0, 0.0
 
     def evaluate_val(model):
         """Pertes de validation pondérées correctement : la value n'est moyennée
@@ -1251,7 +1266,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
         sv = sw = sp = sn = s1 = s3 = f1 = f3 = fn = 0.0
         with torch.no_grad():
             for i in range(0, len(val[0]), 256):
-                g, sc, lab, pol = [t[i:i + 256] for t in val]
+                g, sc, lab, pol = [t[i:i + 256].to(device) for t in val]
                 value_pred, policy_pred = model(g.float(), sc)
                 w = (lab >= 0).float()
                 bce = nn.functional.binary_cross_entropy(value_pred, lab.clamp(min=0), reduction="none")
@@ -1264,8 +1279,15 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
                 f1 / max(fn, 1), f3 / max(fn, 1))
 
     # Modèle
-    model = build_model()
+    # v33 : carte graphique NVIDIA si PyTorch la voit, sinon processeur
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"  Calcul sur : {torch.cuda.get_device_name(0) if device.type == 'cuda' else 'processeur (CPU)'}")
+    model = build_model().to(device)
     model.value_detach = value_detach
+
+    def save(path):
+        """Poids enregistrés sur le processeur : relisibles partout (torch_free, navigateur)."""
+        torch.save({k: v.detach().cpu() for k, v in model.state_dict().items()}, path)
     print(f"  Tête value : compacte (~3 000 poids)"
           + (", sans influence sur le tronc commun (gradient arrêté)" if value_detach
              else ", entraînée avec le tronc commun (--value-joint)"))
@@ -1308,12 +1330,12 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
                     f"  coup top1={ft1:.0%} top3={ft3:.0%}")
             if vv < best_value:
                 best_value, best_value_epoch = vv, epoch + 1
-                torch.save(model.state_dict(), value_path)
+                save(value_path)
                 msg += "  ★value"
             score = vp if select_on_policy else vv + 0.5 * vp
             if score < best:
                 best, since_best = score, 0
-                torch.save(model.state_dict(), model_path)
+                save(model_path)
                 msg += "  💾"
             else:
                 since_best += 1
@@ -1327,7 +1349,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     # Sauvegarder : le meilleur modèle en validation (💾) a déjà été écrit ;
     # sans parties de validation, on garde le dernier.
     if not len(val[0]):
-        torch.save(model.state_dict(), model_path)
+        save(model_path)
     print(f"\n✅ Modèle sauvegardé: {model_path}"
           + (f" (meilleure validation, loss={best:.4f})" if len(val[0]) else ""))
     print(f"   Taille: {os.path.getsize(model_path) / 1024:.1f} KB")
@@ -1533,9 +1555,13 @@ def main():
         data_dir = sys.argv[2] if len(sys.argv) > 2 else "."
         args = [a for a in sys.argv[3:] if not a.startswith("--")]
         epochs = int(args[0]) if args else 100
+        opt = lambda name, default: next((type(default)(a.split("=", 1)[1]) for a in sys.argv
+                                          if a.startswith(name + "=")), default)
         train(data_dir, epochs=epochs, legacy="--legacy" in sys.argv,
               value_detach="--value-joint" not in sys.argv,
-              keep_split="--new-split" not in sys.argv)
+              keep_split="--new-split" not in sys.argv,
+              selfplay_keep=opt("--selfplay-keep", 0.08),
+              selfplay_max=opt("--selfplay-max", 0))
 
     elif command == "eval":
         json_path = sys.argv[2]

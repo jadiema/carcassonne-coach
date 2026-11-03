@@ -1,0 +1,12 @@
+{
+  "addons": {
+    "jgrisolia@free.fr": {
+      "updates": [
+        {
+          "version": "3.0.1",
+          "update_link": "https://github.com/jadiema/carcassonne-coach/releases/download/v3.0.1/carcassonne-coach.xpi"
+        }
+      ]
+    }
+  }
+}

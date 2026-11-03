@@ -9,6 +9,148 @@
   "use strict";
 
   // ============================================================
+  // LANGUE DE L'INTERFACE (français / anglais) — v3.0.1
+  // ============================================================
+  const LANG_KEY = "carcCoachLang";
+  let LANG = (() => {
+    try { const s = localStorage.getItem(LANG_KEY); if (s === "fr" || s === "en") return s; } catch {}
+    return (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "en";
+  })();
+  const I18N = {
+    fr: {
+      notBga: "Cette page n’est pas une partie de Carcassonne sur BGA.",
+      noBoard: "Plateau de jeu non trouvé.",
+      unexpected: "Erreur inattendue : {m}",
+      blocked: "Le coach analyse les parties <strong>terminées</strong> et les <strong>replays</strong> " +
+               "uniquement, conformément aux règles de Board Game Arena.<br>" +
+               "Revenez à la fin de la partie, ou ouvrez son replay.",
+      startFail: "Impossible de lancer l’analyse",
+      noJob: "Pas de job_id reçu",
+      analysisError: "Erreur d’analyse",
+      timeout: "Délai dépassé : l’analyse n’a pas terminé à temps",
+      warnTitle: "⚠ AVERTISSEMENT",
+      warnText: "Le carcassonne-coach est un outil d’apprentissage, conçu uniquement pour vous aider " +
+                "à progresser. Il ne doit en aucun cas être utilisé pendant une partie classée, ni " +
+                "pendant une partie en cours contre d’autres joueurs qui n’en sont pas informés. " +
+                "Se faire conseiller par une machine en cours de partie, c’est tricher. C’est " +
+                "contraire au fair-play et aux règles des sites de jeu en ligne. Servez-vous-en pour " +
+                "relire vos parties terminées et leurs replays, ou analyser une position après coup.",
+      levelTitle: "⚠ SON NIVEAU ACTUEL",
+      levelText: "Le carcassonne-coach reste un outil d’apprentissage. À ce jour, ses conseils " +
+                 "n’atteignent pas le niveau des joueurs Maîtres de Board Game Arena, classés au-dessus " +
+                 "de 700 points Elo, ni probablement celui des joueurs classés au-dessus de 600. " +
+                 "Je continue cependant de l’améliorer jour après jour : peut-être deviendra-t-il un " +
+                 "jour, lui aussi, un maître de Carcassonne.",
+      legal: "Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena. " +
+             "Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH.",
+      understood: "J’ai compris",
+      placed: "{n} posées",
+      remaining: "{n} restantes",
+      iAm: "Je suis :",
+      engineChecking: "Moteur : vérification…",
+      engineServer: "Moteur : serveur local (rapide) ✓",
+      engineBrowser: "Moteur : intégré au navigateur ✓",
+      engineFirst: "Première analyse : quelques secondes de chargement du moteur.",
+      engineDown: "Moteur : indisponible — rechargez la page",
+      engineDownMsg: "Moteur indisponible. Rechargez la page (F5), puis relancez l’analyse.",
+      timeLabel: "Temps d’analyse :",
+      seconds: "{n} secondes",
+      minute: "1 minute",
+      minutes: "{n} minutes",
+      analyze: "🔍 Analyser",
+      connecting: "⏳ Connexion…",
+      analyzing: "⏳ Analyse… ({s} s)",
+      simulating: "⏳ Simulation en cours… ({s} s)",
+      rerun: "🔄 Relancer",
+      error: "Erreur : {m}",
+      tileMissing: "⚠️ Tuile de <strong>{name}</strong> non détectée. " +
+                   "L’analyse utilise votre tuile (<strong>{edges}</strong>).",
+      tileInfo: "🎯 Tuile : <strong>{tile}</strong> — analyse pour <strong>{player}</strong>",
+      tilesSeen: "Tuiles détectées : {me}={mine}, adversaire={theirs}",
+      you: "Vous",
+      early: "ℹ️ <strong>{n} tuiles restantes</strong> — en début de partie, l’analyse MCTS " +
+             "est peu fiable. Fiez-vous à votre intuition. L’outil devient pertinent " +
+             "sous 30 tuiles restantes.",
+      mid: "ℹ️ <strong>{n} tuiles restantes</strong> — les recommandations sont indicatives. " +
+           "La fiabilité augmente à mesure que la partie avance.",
+      copied: "✅ Copié",
+      saveTitle: "Sauvegarder le JSON",
+      disclaimerTitle: "Avertissement : usage et niveau du coach",
+      simsIn: "{n} simulations en {s} s",
+      noMove: "Aucun placement possible.",
+      noMeeple: "sans meeple",
+      clickToSee: "{n} sim. · cliquez pour voir sur le plateau",
+      langTitle: "Switch to English",
+    },
+    en: {
+      notBga: "This page is not a Carcassonne game on BGA.",
+      noBoard: "Game board not found.",
+      unexpected: "Unexpected error: {m}",
+      blocked: "The coach only analyses <strong>finished</strong> games and <strong>replays</strong>, " +
+               "in accordance with Board Game Arena rules.<br>" +
+               "Come back at the end of the game, or open its replay.",
+      startFail: "Could not start the analysis",
+      noJob: "No job_id received",
+      analysisError: "Analysis error",
+      timeout: "Timed out: the analysis did not finish in time",
+      warnTitle: "⚠ WARNING",
+      warnText: "The carcassonne-coach is a learning tool, designed only to help you improve. " +
+                "It must never be used during a rated game, nor during a game in progress against " +
+                "other players who are not aware of it. Getting advice from a machine during a game " +
+                "is cheating. It goes against fair play and the rules of online gaming sites. Use it " +
+                "to review your finished games and their replays, or to analyse a position afterwards.",
+      levelTitle: "⚠ ITS CURRENT LEVEL",
+      levelText: "The carcassonne-coach remains a learning tool. Its advice does not yet reach the " +
+                 "level of Board Game Arena Master players, rated above 700 Elo, nor probably that of " +
+                 "players rated above 600. I keep improving it day after day: perhaps one day it will " +
+                 "become a Carcassonne master too.",
+      legal: "Independent project, not affiliated with Hans im Glück or Board Game Arena. " +
+             "Carcassonne is a registered trademark of Hans im Glück Verlags-GmbH.",
+      understood: "Got it",
+      placed: "{n} placed",
+      remaining: "{n} left",
+      iAm: "I am:",
+      engineChecking: "Engine: checking…",
+      engineServer: "Engine: local server (fast) ✓",
+      engineBrowser: "Engine: built into the browser ✓",
+      engineFirst: "First analysis: a few seconds to load the engine.",
+      engineDown: "Engine: unavailable — reload the page",
+      engineDownMsg: "Engine unavailable. Reload the page (F5), then run the analysis again.",
+      timeLabel: "Analysis time:",
+      seconds: "{n} seconds",
+      minute: "1 minute",
+      minutes: "{n} minutes",
+      analyze: "🔍 Analyse",
+      connecting: "⏳ Connecting…",
+      analyzing: "⏳ Analysing… ({s} s)",
+      simulating: "⏳ Simulating… ({s} s)",
+      rerun: "🔄 Run again",
+      error: "Error: {m}",
+      tileMissing: "⚠️ <strong>{name}</strong>’s tile was not detected. " +
+                   "The analysis uses your tile (<strong>{edges}</strong>).",
+      tileInfo: "🎯 Tile: <strong>{tile}</strong> — analysis for <strong>{player}</strong>",
+      tilesSeen: "Detected tiles: {me}={mine}, opponent={theirs}",
+      you: "You",
+      early: "ℹ️ <strong>{n} tiles left</strong> — early in the game, the MCTS analysis is not " +
+             "very reliable. Trust your intuition. The tool becomes relevant below 30 tiles left.",
+      mid: "ℹ️ <strong>{n} tiles left</strong> — the recommendations are indicative. " +
+           "Their reliability increases as the game goes on.",
+      copied: "✅ Copied",
+      saveTitle: "Save the JSON",
+      disclaimerTitle: "Warning: use and level of the coach",
+      simsIn: "{n} simulations in {s} s",
+      noMove: "No legal placement.",
+      noMeeple: "no meeple",
+      clickToSee: "{n} sim. · click to see it on the board",
+      langTitle: "Passer en français",
+    },
+  };
+  function t(key, vars = {}) {
+    const s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.fr[key] ?? key;
+    return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ""));
+  }
+
+  // ============================================================
   // TILE DATABASE — Jeu de base (72 tuiles)
   // ============================================================
   // landscape = bords [Top, Right, Bottom, Left]
@@ -185,12 +327,12 @@
   function extractGameState() {
     const wrapper = document.querySelector("#leftright_page_wrapper");
     if (!wrapper || wrapper.className !== "bgagame-carcassonne") {
-      return { error: "Cette page n'est pas une partie de Carcassonne sur BGA." };
+      return { error: t("notBga") };
     }
 
     const mapContainer = document.getElementById("map_container");
     if (!mapContainer) {
-      return { error: "Plateau de jeu non trouvé." };
+      return { error: t("noBoard") };
     }
 
     // Players
@@ -502,9 +644,7 @@
     try { top = window.top.location.pathname; } catch (e) { top = "(inaccessible)"; }
     return {
       ok: false,
-      reason: "Le coach analyse les parties <strong>terminées</strong> et les <strong>replays</strong> " +
-              "uniquement, conformément aux règles de Board Game Arena.<br>" +
-              "Revenez à la fin de la partie, ou ouvrez son replay." +
+      reason: t("blocked") +
               `<div style="margin-top:8px;font-size:10px;color:#7f849c">diagnostic : ${location.pathname}` +
               ` · parent ${top}</div>`,
     };
@@ -521,14 +661,14 @@
     });
 
     if (!startResp || !startResp.ok) {
-      throw new Error(startResp?.error || "Impossible de lancer l'analyse");
+      throw new Error(startResp?.error || t("startFail"));
     }
 
     const jobId = startResp.data.job_id;
     if (!jobId) {
       // Réponse directe (pas de job — ancienne API ?)
       if (startResp.data.moves) return startResp.data;
-      throw new Error(startResp.data.error || "Pas de job_id reçu");
+      throw new Error(startResp.data.error || t("noJob"));
     }
 
     // 2. Polling toutes les 2 secondes jusqu'au résultat
@@ -548,12 +688,12 @@
         return data.result;
       }
       if (data.status === "error") {
-        throw new Error(data.error || "Erreur d'analyse");
+        throw new Error(data.error || t("analysisError"));
       }
       // status === "running" → on continue le polling
     }
 
-    throw new Error("Timeout — l'analyse n'a pas terminé à temps");
+    throw new Error(t("timeout"));
   }
 
   // ============================================================
@@ -572,30 +712,14 @@
       background: #2a2430; border: 1px solid #f9a85a; font-size: 12.5px; line-height: 1.45;
     `;
     box.innerHTML = `
-      <div style="font-weight:700;color:#f9a85a;margin-bottom:6px">⚠ AVERTISSEMENT</div>
-      <div style="margin-bottom:10px">
-        Le carcassonne-coach est un outil d’apprentissage, conçu uniquement pour vous aider
-        à progresser. Il ne doit en aucun cas être utilisé pendant une partie classée, ni
-        pendant une partie en cours contre d’autres joueurs qui n’en sont pas informés.
-        Se faire conseiller par une machine en cours de partie, c’est tricher. C’est
-        contraire au fair-play et aux règles des sites de jeu en ligne. Servez-vous-en pour
-        relire vos parties terminées et leurs replays, ou analyser une position après coup.
-      </div>
-      <div style="font-weight:700;color:#f9a85a;margin-bottom:6px">⚠ SON NIVEAU ACTUEL</div>
-      <div style="margin-bottom:10px">
-        Le carcassonne-coach reste un outil d’apprentissage. À ce jour, ses conseils
-        n’atteignent pas le niveau des joueurs Maîtres de Board Game Arena, classés au-dessus
-        de 700 points Elo, ni probablement celui des joueurs classés au-dessus de 600.
-        Je continue cependant de l’améliorer jour après jour : peut-être deviendra-t-il un
-        jour, lui aussi, un maître de Carcassonne.
-      </div>
-      <div style="font-size:11px;color:#a6adc8;margin-bottom:10px">
-        Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena.
-        Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH.
-      </div>`;
+      <div style="font-weight:700;color:#f9a85a;margin-bottom:6px">${t("warnTitle")}</div>
+      <div style="margin-bottom:10px">${t("warnText")}</div>
+      <div style="font-weight:700;color:#f9a85a;margin-bottom:6px">${t("levelTitle")}</div>
+      <div style="margin-bottom:10px">${t("levelText")}</div>
+      <div style="font-size:11px;color:#a6adc8;margin-bottom:10px">${t("legal")}</div>`;
     const ok = document.createElement("button");
     ok.className = "carc-btn carc-btn-secondary";
-    ok.textContent = "J’ai compris";
+    ok.textContent = t("understood");
     ok.addEventListener("click", () => {
       try { localStorage.setItem(DISCLAIMER_KEY, "1"); } catch {}
       box.remove();
@@ -644,7 +768,26 @@
       cursor: pointer; padding: 0 4px; line-height: 1;
     `;
     closeX.addEventListener("click", removeModal);
-    dragBar.append(closeX);
+
+    // Drapeau : change la langue de l'interface (mémorisée pour les prochaines fois)
+    const langBtn = document.createElement("button");
+    langBtn.id = "carc-lang";
+    langBtn.textContent = LANG === "fr" ? "🇬🇧" : "🇫🇷";
+    langBtn.title = t("langTitle");
+    langBtn.style.cssText = `
+      background: none; border: none; font-size: 18px; cursor: pointer;
+      padding: 0 6px; line-height: 1; margin-left: auto;
+    `;
+    langBtn.addEventListener("mousedown", e => e.stopPropagation());
+    langBtn.addEventListener("click", () => {
+      LANG = LANG === "fr" ? "en" : "fr";
+      try { localStorage.setItem(LANG_KEY, LANG); } catch {}
+      const pos = { left: panel.style.left, top: panel.style.top, right: panel.style.right };
+      showModal(state);
+      const p2 = document.getElementById("carc-coach-overlay");
+      if (p2 && pos.left) { p2.style.left = pos.left; p2.style.top = pos.top; p2.style.right = pos.right; }
+    });
+    dragBar.append(langBtn, closeX);
 
     // Drag logic
     let isDragging = false, offsetX = 0, offsetY = 0;
@@ -673,8 +816,8 @@
     const statsHtml = document.createElement("div");
     statsHtml.className = "carc-stats";
     const statItems = [
-      ["🧩", `${state.board.length} posées`],
-      ["📦", `${state.remainingCount} restantes`],
+      ["🧩", t("placed", { n: state.board.length })],
+      ["📦", t("remaining", { n: state.remainingCount })],
     ];
     if (state.currentTile) {
       statItems.push(["🎯", state.currentTile.edges]);
@@ -695,7 +838,7 @@
     // Sélecteur de joueur
     const playerRow = document.createElement("div");
     playerRow.style.cssText = "display:flex;align-items:center;gap:8px;margin:12px 0 4px;";
-    playerRow.innerHTML = `<span style="font-size:13px;color:#a6adc8">Je suis :</span>`;
+    playerRow.innerHTML = `<span style="font-size:13px;color:#a6adc8">${t("iAm")}</span>`;
 
     const playerSelect = document.createElement("select");
     playerSelect.id = "carc-player-select";
@@ -724,7 +867,7 @@
     const serverLabel = document.createElement("span");
     serverLabel.id = "carc-server-label";
     serverLabel.style.cssText = "font-size:12px;color:#6c7086;";
-    serverLabel.textContent = "Moteur : vérification...";
+    serverLabel.textContent = t("engineChecking");
     serverRow.append(serverDot, serverLabel);
 
     // Moteur utilisé : serveur local s'il est lancé, sinon le navigateur
@@ -735,26 +878,26 @@
       if (engine === "serveur") {
         dot.style.background = "#a6e3a1";
         label.style.color = "#a6e3a1";
-        label.textContent = "Moteur : serveur local (rapide) ✓";
+        label.textContent = t("engineServer");
       } else if (engine === "navigateur") {
         dot.style.background = "#89b4fa";
         label.style.color = "#89b4fa";
-        label.textContent = "Moteur : intégré au navigateur ✓";
+        label.textContent = t("engineBrowser");
         const note = document.createElement("div");
         note.style.cssText = "width:100%;margin-top:4px;font-size:11px;color:#a6adc8;line-height:1.5;";
-        note.textContent = "Première analyse : quelques secondes de chargement du moteur.";
+        note.textContent = t("engineFirst");
         serverRow.append(note);
       } else {
         dot.style.background = "#f38ba8";
         label.style.color = "#f38ba8";
-        label.textContent = "Moteur : indisponible — rechargez la page";
+        label.textContent = t("engineDown");
       }
     });
 
     // Sélecteur de temps
     const timeRow = document.createElement("div");
     timeRow.style.cssText = "display:flex;align-items:center;gap:8px;margin:12px 0 8px;";
-    timeRow.innerHTML = `<span style="font-size:13px;color:#a6adc8">Temps d'analyse :</span>`;
+    timeRow.innerHTML = `<span style="font-size:13px;color:#a6adc8">${t("timeLabel")}</span>`;
 
     const timeSelect = document.createElement("select");
     timeSelect.style.cssText = `
@@ -763,14 +906,14 @@
       outline: none;
     `;
     [
-      { value: "5", label: "5 secondes" },
-      { value: "10", label: "10 secondes" },
-      { value: "15", label: "15 secondes" },
-      { value: "30", label: "30 secondes" },
-      { value: "60", label: "1 minute" },
-      { value: "120", label: "2 minutes" },
-      { value: "300", label: "5 minutes" },
-      { value: "600", label: "10 minutes" },
+      { value: "5", label: t("seconds", { n: 5 }) },
+      { value: "10", label: t("seconds", { n: 10 }) },
+      { value: "15", label: t("seconds", { n: 15 }) },
+      { value: "30", label: t("seconds", { n: 30 }) },
+      { value: "60", label: t("minute") },
+      { value: "120", label: t("minutes", { n: 2 }) },
+      { value: "300", label: t("minutes", { n: 5 }) },
+      { value: "600", label: t("minutes", { n: 10 }) },
     ].forEach(opt => {
       const o = document.createElement("option");
       o.value = opt.value;
@@ -799,7 +942,7 @@
     const analyzeBtn = document.createElement("button");
     analyzeBtn.className = "carc-btn carc-btn-primary";
     analyzeBtn.style.cssText += "flex:1;";
-    analyzeBtn.textContent = "🔍 Analyser";
+    analyzeBtn.textContent = t("analyze");
     analyzeBtn.addEventListener("click", async () => {
       const policy = analysisAllowed();
       if (!policy.ok) {
@@ -807,24 +950,24 @@
         return;
       }
       analyzeBtn.disabled = true;
-      analyzeBtn.textContent = "⏳ Connexion...";
+      analyzeBtn.textContent = t("connecting");
 
       // Ré-extraire l'état frais à chaque analyse
       const freshState = extractGameState();
       if (freshState.error) {
         resultsDiv.innerHTML = `<div class="carc-error">${freshState.error}</div>`;
         analyzeBtn.disabled = false;
-        analyzeBtn.textContent = "🔍 Analyser";
+        analyzeBtn.textContent = t("analyze");
         return;
       }
 
       const serverUp = await checkServer();
       if (!serverUp) {
         resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">
-          Moteur indisponible. Rechargez la page (F5), puis relancez l'analyse.
+          ${t("engineDownMsg")}
         </div>`;
         analyzeBtn.disabled = false;
-        analyzeBtn.textContent = "🔍 Analyser";
+        analyzeBtn.textContent = t("analyze");
         return;
       }
 
@@ -846,8 +989,7 @@
       } else if (!isSelectingSelf && opts.myTile && !opts.opponentTile) {
         // Pas de tuile adverse détectée, on utilise la nôtre avec avertissement
         turnWarning = `<div style="background:#45283c;color:#f9e2af;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;line-height:1.5">
-          ⚠️ Tuile de <strong>${selectedPlayer.name}</strong> non détectée.
-          L'analyse utilise votre tuile (<strong>${opts.myTile.edges}</strong>).
+          ${t("tileMissing", { name: selectedPlayer.name, edges: opts.myTile.edges })}
         </div>`;
       }
 
@@ -855,12 +997,12 @@
       const tileName = freshState.currentTile?.edges || '?';
       const tileShield = freshState.currentTile?.shield ? ' ★' : '';
       let tileInfo = `<div style="background:#1e3a5f;color:#89b4fa;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:12px">
-        🎯 Tuile : <strong>${tileName}${tileShield}</strong> — analyse pour <strong>${selectedPlayer?.name || '?'}</strong>`;
+        ${t("tileInfo", { tile: tileName + tileShield, player: selectedPlayer?.name || "?" })}`;
       // Montrer les deux tuiles si elles sont différentes
       if (opts.myTile && opts.opponentTile) {
         const myE = opts.myTile.edges;
         const oppE = opts.opponentTile.edges;
-        tileInfo += `<br><span style="color:#a6adc8;font-size:11px">Tuiles détectées : ${loggedIn?.name || 'Vous'}=${myE}, adversaire=${oppE}</span>`;
+        tileInfo += `<br><span style="color:#a6adc8;font-size:11px">${t("tilesSeen", { me: loggedIn?.name || t("you"), mine: myE, theirs: oppE })}</span>`;
       }
       tileInfo += `</div>`;
 
@@ -869,23 +1011,20 @@
       const remaining = freshState.remainingCount || 0;
       if (remaining > 40) {
         earlyWarning = `<div style="background:#1e3a5f;color:#89b4fa;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;line-height:1.5">
-          ℹ️ <strong>${remaining} tuiles restantes</strong> — en début de partie, l'analyse MCTS
-          est peu fiable. Fiez-vous à votre intuition. L'outil devient pertinent
-          sous 30 tuiles restantes.
+          ${t("early", { n: remaining })}
         </div>`;
       } else if (remaining > 25) {
         earlyWarning = `<div style="background:#1e3a5f;color:#89b4fa;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;line-height:1.5">
-          ℹ️ <strong>${remaining} tuiles restantes</strong> — les recommandations sont indicatives.
-          La fiabilité augmente à mesure que la partie avance.
+          ${t("mid", { n: remaining })}
         </div>`;
       }
 
-      analyzeBtn.textContent = `⏳ Analyse... (${timeSec}s)`;
+      analyzeBtn.textContent = t("analyzing", { s: timeSec });
 
       // Vider immédiatement et afficher le chargement
       const warnings = turnWarning + tileInfo + earlyWarning;
       resultsDiv.innerHTML = warnings + `<div style="font-size:12px;color:#a6adc8;text-align:center;padding:16px">
-        ⏳ Simulation en cours... (${timeSec}s)
+        ${t("simulating", { s: timeSec })}
       </div>`;
 
       try {
@@ -895,10 +1034,10 @@
         showResults(resultsDiv, result);
       } catch (e) {
         console.error("🏰 Coach: erreur", e);
-        resultsDiv.innerHTML = `<div class="carc-error">Erreur: ${e.message}</div>`;
+        resultsDiv.innerHTML = `<div class="carc-error">${t("error", { m: e.message })}</div>`;
       }
       analyzeBtn.disabled = false;
-      analyzeBtn.textContent = "🔄 Relancer";
+      analyzeBtn.textContent = t("rerun");
     });
 
     const copyBtn = document.createElement("button");
@@ -909,7 +1048,7 @@
       if (textarea.style.display === "block") {
         textarea.select();
         document.execCommand("copy");
-        copyBtn.textContent = "✅ Copié";
+        copyBtn.textContent = t("copied");
         setTimeout(() => { copyBtn.textContent = "📋 JSON"; }, 2000);
       }
     });
@@ -917,7 +1056,7 @@
     const saveBtn = document.createElement("button");
     saveBtn.className = "carc-btn carc-btn-secondary";
     saveBtn.textContent = "💾";
-    saveBtn.title = "Sauvegarder le JSON";
+    saveBtn.title = t("saveTitle");
     saveBtn.addEventListener("click", () => {
       if (saveGameJSON()) {
         saveBtn.textContent = "✅";
@@ -928,7 +1067,7 @@
     const disclaimerBtn = document.createElement("button");
     disclaimerBtn.className = "carc-btn carc-btn-secondary";
     disclaimerBtn.textContent = "⚠️ DISCLAIMER";
-    disclaimerBtn.title = "Avertissement : usage et niveau du coach";
+    disclaimerBtn.title = t("disclaimerTitle");
     disclaimerBtn.style.cssText += "border-color:#f9a85a;color:#f9a85a;";
     disclaimerBtn.addEventListener("click", () => toggleDisclaimer(body));
 
@@ -951,11 +1090,11 @@
 
     let html = `<div style="margin:8px 0">`;
     html += `<div style="font-size:11px;color:#6c7086;margin-bottom:10px">
-      ${stats.simulations} simulations en ${stats.elapsed}s
+      ${t("simsIn", { n: stats.simulations, s: stats.elapsed })}
     </div>`;
 
     if (!moves || moves.length === 0) {
-      html += `<div class="carc-error">Aucun placement possible.</div>`;
+      html += `<div class="carc-error">${t("noMove")}</div>`;
     } else {
       moves.forEach((m, i) => {
         const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i+1}`;
@@ -964,7 +1103,7 @@
 
         const meepleText = m.meeple
           ? `<span style="color:#f9e2af">♟ ${m.meeple}</span>`
-          : `<span style="color:#6c7086">sans meeple</span>`;
+          : `<span style="color:#6c7086">${t("noMeeple")}</span>`;
 
         const rotNames = ["0°", "90°↻", "180°", "270°↺"];
 
@@ -983,7 +1122,7 @@
           <div style="background:#11111b;height:5px;border-radius:3px;overflow:hidden">
             <div style="width:${barWidth}%;height:100%;background:${barColor};border-radius:3px"></div>
           </div>
-          <div style="font-size:10px;color:#585b70;margin-top:3px">${m.visits} sim. · cliquez pour voir sur le plateau</div>
+          <div style="font-size:10px;color:#585b70;margin-top:3px">${t("clickToSee", { n: m.visits })}</div>
         </div>`;
       });
     }
@@ -1114,7 +1253,7 @@
           showModal(state);
         }
       } catch (e) {
-        showError("Erreur inattendue : " + e.message);
+        showError(t("unexpected", { m: e.message }));
         console.error("Carcassonne Coach error:", e);
       }
     });

@@ -30,3 +30,6 @@ desktop.ini
 
 # Parties d’auto-jeu (générées par selfplay.py)
 parties/selfplay/
+
+# Parties des matchs entre réseaux (arena.py)
+arena/
