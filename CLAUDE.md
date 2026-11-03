@@ -35,7 +35,8 @@ Langue du projet : **français** (code commenté en français, messages et docs 
    mêmes coups et visites MCTS qu'avant (comparer avec l'ancienne version, même graine).
 4. Après toute modification de l'encodeur ou du réseau : `python verify_torch_free.py parties`.
 5. Nouvelle version de l'extension : augmenter `version` dans `manifest.json`, construire
-   le `.xpi` avec `npx web-ext build` (fichiers de l'extension uniquement) et le faire signer
+   le `.xpi` avec `python build_xpi.py` (JAMAIS `web-ext build`, qui omet les fichiers .zip,
+   donc pyodide/python_stdlib.zip : le moteur du navigateur ne démarre plus) et le faire signer
    sur addons.mozilla.org ; notes pour les vérificateurs : `NOTES-VERIFICATEURS-MOZILLA.txt`.
 
 ## Commandes utiles

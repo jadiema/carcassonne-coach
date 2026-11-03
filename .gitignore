@@ -33,3 +33,6 @@ parties/selfplay/
 
 # Parties des matchs entre réseaux (arena.py)
 arena/
+
+# Paquets de l’extension (fabriqués par build_xpi.py)
+*.xpi
