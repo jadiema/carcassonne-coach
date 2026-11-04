@@ -65,11 +65,12 @@ class NumpyNeuralEvaluator(N.NeuralEvaluator):
 _evaluator = None
 
 
-def load(model_path: str = "carcassonne_model.pt") -> str:
-    """Charge le réseau une fois pour toutes. Renvoie le mode utilisé."""
+def load(model_path: str = "carcassonne_model.pt", use_value: bool = True) -> str:
+    """Charge le réseau une fois pour toutes. Renvoie le mode utilisé.
+    v3.0.3 : la tête value juge les positions (réseau v33, +69 Elo en match contre la v28)."""
     global _evaluator
     try:
-        _evaluator = NumpyNeuralEvaluator(model_path)
+        _evaluator = NumpyNeuralEvaluator(model_path, use_value=use_value)
         return "neural"
     except Exception as e:                      # pas de modèle : heuristique seule
         print(f"⚠️ Réseau non chargé ({e}) — heuristique seule")

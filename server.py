@@ -37,7 +37,7 @@ MODEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "carcasson
 if os.path.exists(MODEL_PATH):
     try:
         from neural_evaluator import NeuralEvaluator
-        neural_evaluator = NeuralEvaluator(MODEL_PATH)
+        neural_evaluator = NeuralEvaluator(MODEL_PATH, use_value=True)   # v3.0.3 : tête value (réseau v33)
         print("🧠 Réseau de neurones chargé avec succès")
     except Exception as e:
         print(f"⚠️ Réseau non chargé: {e}")

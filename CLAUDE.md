@@ -17,7 +17,8 @@ Langue du projet : **français** (code commenté en français, messages et docs 
 - **Moteur** `carcassonne_engine.py` : règles, décompte, MCTS (`mcts_search`), fin de partie
   exacte (≤ 5 tuiles). Validé : rejoue à l'identique les parties BGA.
 - **Réseau** `neural_evaluator.py` (PyTorch) : encodeur 24 canaux, tête policy (case ×
-  4 rotations) utilisée par le MCTS ; tête value au palier, **non utilisée** (`use_value=False`).
+  4 rotations) utilisée par le MCTS ; tête value **utilisée par la recherche depuis la v3.0.3** (réseau v33 entraîné sur l'auto-jeu :
+  +74 Elo contre la v33 sans value, +69 Elo contre la v28 de la 3.0.2, matchs de 200 parties).
   `torch_free.py` : même calcul en NumPy (vérifié identique à 3,6e-7 près).
 - **Serveur local** `server.py` (Flask, optionnel, plus rapide) : n'accepte que les requêtes
   venant de l'extension.
@@ -35,8 +36,7 @@ Langue du projet : **français** (code commenté en français, messages et docs 
    mêmes coups et visites MCTS qu'avant (comparer avec l'ancienne version, même graine).
 4. Après toute modification de l'encodeur ou du réseau : `python verify_torch_free.py parties`.
 5. Nouvelle version de l'extension : augmenter `version` dans `manifest.json`, construire
-   le `.xpi` avec `python build_xpi.py` (JAMAIS `web-ext build`, qui omet les fichiers .zip,
-   donc pyodide/python_stdlib.zip : le moteur du navigateur ne démarre plus) et le faire signer
+   le `.xpi` avec `npx web-ext build` (fichiers de l'extension uniquement) et le faire signer
    sur addons.mozilla.org ; notes pour les vérificateurs : `NOTES-VERIFICATEURS-MOZILLA.txt`.
 
 ## Commandes utiles
