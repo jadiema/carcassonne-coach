@@ -1031,6 +1031,7 @@
         const result = await requestAnalysis(freshState, 999999, timeSec, playerIdx);
         console.log("🏰 Coach: résultats reçus —", result.stats.simulations, "sim en", result.stats.elapsed + "s");
         resultsDiv.innerHTML = warnings;
+        analysisTile = freshState.currentTile || null;
         showResults(resultsDiv, result);
       } catch (e) {
         console.error("🏰 Coach: erreur", e);
@@ -1082,6 +1083,83 @@
     document.body.append(panel);
   }
 
+
+  // ============================================================
+  // DESSIN DE LA TUILE ORIENTÉE (v3.0.3)
+  // ============================================================
+  // edges = bords APRÈS rotation, dans l'ordre [haut, droite, bas, gauche] ;
+  // tile = tuile en main (description : villes séparées, monastère, blason).
+  let analysisTile = null;
+
+  function tileSvg(edges, tile, size) {
+    if (!edges || edges.length !== 4) return "";
+    const F = "#8db36a", C = "#c9924a", R = "#f3ede1", INK = "#1e2b2f";
+    const desc = (tile && tile.desc) || "";
+    const separate = /séparés/.test(desc), monastery = /Monast/.test(desc);
+    const mid = [[50, 0], [100, 50], [50, 100], [0, 50]];
+    const corner = [[0, 0], [100, 0], [100, 100], [0, 100]];      // coin d'avant chaque côté
+    const pts = a => a.map(p => p.join(",")).join(" ");
+    const city = [0, 1, 2, 3].filter(i => edges[i] === "C");
+    const road = [0, 1, 2, 3].filter(i => edges[i] === "R");
+    let g = `<rect width="100" height="100" fill="${F}"/>`;
+
+    // Villes
+    const cap = i => {
+      const [cx, cy] = mid[i];
+      const horiz = i % 2 === 0;
+      return `<ellipse cx="${cx}" cy="${cy}" rx="${horiz ? 52 : 30}" ry="${horiz ? 30 : 52}" fill="${C}"/>`;
+    };
+    if (city.length === 4) {
+      g += `<rect width="100" height="100" fill="${C}"/>`;
+    } else if (city.length === 3) {
+      const k = [0, 1, 2, 3].find(i => edges[i] !== "C");
+      const a = corner[k], b = corner[(k + 1) % 4];
+      const inward = [50 + (mid[k][0] - 50) * 0.05, 50 + (mid[k][1] - 50) * 0.05];
+      g += `<rect width="100" height="100" fill="${C}"/><polygon points="${pts([a, b, inward])}" fill="${F}"/>`;
+    } else if (city.length === 2 && !separate) {
+      const [i, j] = city;
+      if ((j - i) % 2 === 1) {                                    // deux côtés voisins : demi-tuile en diagonale
+        const shared = j - i === 1 ? corner[j] : corner[0];
+        const others = [corner[i], corner[(i + 1) % 4], corner[j], corner[(j + 1) % 4]]
+          .filter((c, n, arr) => arr.findIndex(d => d[0] === c[0] && d[1] === c[1]) === n);
+        g += `<polygon points="${pts(others)}" fill="${C}"/>`;
+      } else {                                                    // deux côtés opposés : bande
+        g += i === 0
+          ? `<polygon points="0,0 100,0 72,50 100,100 0,100 28,50" fill="${C}"/>`
+          : `<polygon points="0,0 50,28 100,0 100,100 50,72 0,100" fill="${C}"/>`;
+      }
+    } else {
+      city.forEach(i => { g += cap(i); });
+    }
+
+    // Routes
+    const line = (a, b) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${R}" stroke-width="9" stroke-linecap="butt"/>`;
+    if (road.length === 2 && (road[1] - road[0]) % 2 === 0) {
+      g += line(mid[road[0]], mid[road[1]]);
+    } else if (road.length === 2) {
+      const [a, b] = [mid[road[0]], mid[road[1]]];
+      g += `<path d="M${a[0]},${a[1]} Q50,50 ${b[0]},${b[1]}" fill="none" stroke="${R}" stroke-width="9"/>`;
+    } else if (road.length > 0) {
+      road.forEach(i => { g += line(mid[i], [50, 50]); });
+      if (road.length >= 3) g += `<rect x="42" y="42" width="16" height="16" fill="#7a6650"/>`;
+    }
+
+    // Monastère
+    if (monastery) {
+      g += `<rect x="36" y="44" width="28" height="22" fill="#ece4d4"/><polygon points="32,46 50,30 68,46" fill="#b5442e"/>`;
+    }
+
+    // Blason, au cœur de la ville
+    if (tile && tile.shield && city.length) {
+      const cx = city.reduce((s, i) => s + mid[i][0], 0) / city.length;
+      const cy = city.reduce((s, i) => s + mid[i][1], 0) / city.length;
+      const x = 50 + (cx - 50) * 0.55, y = 50 + (cy - 50) * 0.55;
+      g += `<polygon points="${x - 8},${y - 9} ${x + 8},${y - 9} ${x + 8},${y + 2} ${x},${y + 10} ${x - 8},${y + 2}" fill="#2f5d8a"/>`;
+    }
+    g += `<rect width="100" height="100" fill="none" stroke="${INK}" stroke-width="3"/>`;
+    return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block;flex:none">${g}</svg>`;
+  }
+
   function showResults(container, result) {
     const { info, moves, stats } = result;
 
@@ -1107,12 +1185,12 @@
 
         const rotNames = ["0°", "90°↻", "180°", "270°↺"];
 
-        html += `<div class="carc-move-card" data-x="${m.x}" data-y="${m.y}" data-rank="${i+1}"
+        html += `<div class="carc-move-card" data-x="${m.x}" data-y="${m.y}" data-rank="${i+1}" data-edges="${m.edges}"
                     style="background:#313244;border-radius:8px;padding:10px;margin-bottom:6px;
                     cursor:pointer; transition: background 0.15s;
                     ${i === 0 ? "border:1px solid #a6e3a1;" : "border:1px solid transparent;"}">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-size:14px;font-weight:600">${medal} (${m.x}, ${m.y}) ${rotNames[m.rotation]}</span>
+            <span style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px">${tileSvg(m.edges, analysisTile, 30)}${medal} (${m.x}, ${m.y}) ${rotNames[m.rotation]}</span>
             <span style="font-size:16px;font-weight:700;color:${barColor}">${m.winRate}%</span>
           </div>
           <div style="font-size:12px;color:#cdd6f4;margin-bottom:3px">
@@ -1136,7 +1214,7 @@
         const x = Number(card.dataset.x);
         const y = Number(card.dataset.y);
         const rank = Number(card.dataset.rank);
-        highlightPosition(x, y, rank);
+        highlightPosition(x, y, rank, card.dataset.edges);
 
         // Style actif sur la carte cliquée
         container.querySelectorAll(".carc-move-card").forEach(c => {
@@ -1155,7 +1233,7 @@
 
     // Auto-highlight du meilleur coup
     if (moves && moves.length > 0) {
-      highlightPosition(moves[0].x, moves[0].y, 1);
+      highlightPosition(moves[0].x, moves[0].y, 1, moves[0].edges);
     }
   }
 
@@ -1166,7 +1244,7 @@
     document.querySelectorAll(".carc-coach-highlight").forEach(el => el.remove());
   }
 
-  function highlightPosition(x, y, rank) {
+  function highlightPosition(x, y, rank, edges) {
     clearHighlights();
 
     // Sur BGA, les emplacements libres sont des éléments indépendants place_XxY
@@ -1201,6 +1279,16 @@
       `;
       badge.textContent = rank;
 
+      // Tuile fantôme dans la bonne orientation, sous le cadre
+      if (edges) {
+        const ghost = document.createElement("div");
+        ghost.className = "carc-coach-highlight";
+        ghost.style.cssText = `
+          position: absolute; inset: 4px; z-index: 9998; pointer-events: none; opacity: 0.85;
+        `;
+        ghost.innerHTML = tileSvg(edges, analysisTile, "100%").replace('style="display:block;flex:none"', 'style="display:block;width:100%;height:100%"');
+        placeEl.appendChild(ghost);
+      }
       // Les place_ de BGA sont déjà en position absolute
       placeEl.appendChild(marker);
       placeEl.appendChild(badge);
