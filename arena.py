@@ -38,6 +38,7 @@ def play_game(args):
     seats = [camp_b, camp_a] if swap else [camp_a, camp_b]
     nets = [_net(c[0], c[2]) for c in seats]
     sims = [c[1] for c in seats]
+    rerank = [c[3] if len(c) > 3 else None for c in seats]
     random.seed(seed)                          # même tirage pour les deux parties de la paire
     g = E.GameState(2)
     g.init_draw_pile()
@@ -53,6 +54,9 @@ def play_game(args):
         g.current_tile = tile
         with contextlib.redirect_stdout(io.StringIO()):
             res = E.mcts_search(g, tile, player, simulations=sims[player], time_limit=600, neural_eval=nets[player])
+        if rerank[player]:
+            res = E.expectimax_rerank(g, tile, player, res, neural_eval=nets[player],
+                                      top_n=8, time_limit=3.0, leaf=rerank[player])
         r = res[0]
         g.place_tile(tile, r["x"], r["y"], r["rotation"], player if r["meeple"] else None, r["meeple"])
         player = 1 - player
@@ -87,15 +91,19 @@ def main():
     ap.add_argument("--sims-b", type=int, default=0, help="simulations par coup pour B (défaut : --sims)")
     ap.add_argument("--value-a", action="store_true", help="A juge les positions avec la tête value du réseau")
     ap.add_argument("--value-b", action="store_true", help="B juge les positions avec la tête value du réseau")
+    ap.add_argument("--reply-a", choices=["mix", "heur", "value"], default=None,
+                    help="A envisage la réponse de l'adversaire (Expectimax) ; juge final : mix, heur ou value")
+    ap.add_argument("--reply-b", choices=["mix", "heur", "value"], default=None,
+                    help="B envisage la réponse de l'adversaire (Expectimax)")
     ap.add_argument("--workers", type=int, default=os.cpu_count() or 4)
     ap.add_argument("--out", default="arena")
     a = ap.parse_args()
     from multiprocessing import Pool
     Path(a.out).mkdir(exist_ok=True)
-    camp_a = (a.a, a.sims_a or a.sims, a.value_a)
-    camp_b = (a.b, a.sims_b or a.sims, a.value_b)
-    label = lambda c: f"{Path(c[0]).stem}, {c[1]} sim.{', value' if c[2] else ''}"
-    tag = lambda c: f"{Path(c[0]).stem}-{c[1]}{'-value' if c[2] else ''}"
+    camp_a = (a.a, a.sims_a or a.sims, a.value_a, a.reply_a)
+    camp_b = (a.b, a.sims_b or a.sims, a.value_b, a.reply_b)
+    label = lambda c: f"{Path(c[0]).stem}, {c[1]} sim.{', value' if c[2] else ''}{', réponse ' + c[3] if c[3] else ''}"
+    tag = lambda c: f"{Path(c[0]).stem}-{c[1]}{'-value' if c[2] else ''}{'-rep' + c[3] if c[3] else ''}"
     log = Path(a.out) / f"{tag(camp_a)}_vs_{tag(camp_b)}_{time.strftime('%Y%m%d-%H%M%S')}.jsonl"
     base = 1_000_003
     jobs = [(base + i, swap, camp_a, camp_b) for i in range(a.pairs) for swap in (0, 1)]

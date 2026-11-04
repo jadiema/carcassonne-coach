@@ -125,8 +125,12 @@ def analyze():
         try:
             start = time.time()
             results = mcts_search(state, state.current_tile, player_idx,
-                                  simulations=sims, time_limit=time_limit,
+                                  simulations=sims, time_limit=0.7 * time_limit,
                                   neural_eval=neural_evaluator)
+            # v3.0.3 : réponse de l'adversaire (Expectimax sur deux coups)
+            results = E.expectimax_rerank(state, state.current_tile, player_idx, results,
+                                          neural_eval=neural_evaluator, top_n=10,
+                                          time_limit=max(1.5, 0.3 * float(time_limit)), leaf="mix")
             elapsed = time.time() - start
 
             top_moves = []
@@ -135,7 +139,7 @@ def analyze():
                     "x": r["x"], "y": r["y"], "rotation": r["rotation"],
                     "edges": r["edges"], "meeple": r["meeple"],
                     "meepleAt": E.meeple_anchor(state.current_tile, r["rotation"], r["meeple"]),
-                    "winRate": r["score"], "visits": r["visits"], "desc": r["desc"],
+                    "winRate": r.get("expectimax", r["score"]), "visits": r["visits"], "desc": r["desc"],
                 })
 
             jobs[job_id] = {

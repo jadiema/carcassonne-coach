@@ -1063,6 +1063,115 @@ def _reserve_value(n_meeples: int, tiles_left: int) -> float:
     return sum(_LAMBDA_BY_RESERVE.get(k, 0.4) * turns for k in range(n_meeples))
 
 
+
+def _fit_counts(state):
+    """Types de tuiles du sac et leur nombre (mis en cache sur la taille du sac)."""
+    key = len(state.draw_pile)
+    c = state.__dict__.get("_fitc")
+    if c is None or c[0] != key:
+        counts = {}
+        for t in state.draw_pile:
+            counts[id(t)] = counts.get(id(t), [t, 0])
+            counts[id(t)][1] += 1
+        c = (key, list(counts.values()))
+        state.__dict__["_fitc"] = c
+    return c[1]
+
+
+def _city_close_prob(state, city_tiles, horizon: int = 12):
+    """Probabilité qu'une ville ouverte se ferme : produit, sur les cases libres qui la
+    bordent, de la chance qu'une tuile compatible soit piochée dans les `horizon`
+    prochains tirages (les deux joueurs confondus)."""
+    cells = set()
+    for (tx, ty) in city_tiles:
+        tile = state.board[(tx, ty)]
+        for s in range(4):
+            if tile.edges[s] == "C" and (tx + DX[s], ty + DY[s]) not in state.board:
+                cells.add((tx + DX[s], ty + DY[s]))
+    if not cells:
+        return 1.0
+    pile = _fit_counts(state)
+    total = sum(n for _, n in pile)
+    if total == 0:
+        return 0.0
+    draws = min(horizon, total)
+    prob = 1.0
+    for (cx, cy) in cells:
+        fit = 0
+        for t, n in pile:
+            for rot in range(4):
+                if state.can_place(t, cx, cy, rot):
+                    fit += n
+                    break
+        p_miss = (1 - fit / total) ** draws
+        prob *= (1 - p_miss)
+    return max(0.02, prob)
+
+
+def _merge_bonus(state, horizon: int = 12):
+    """Points en attente gagnés par fusion de villes (voir _evaluate_position)."""
+    bonus = {0: 0.0, 1: 0.0}
+    seen_cells = set()
+    for (x, y), tile in state.board.items():
+        if tile.meeple_player is None or not (tile.meeple_spot or "").startswith("city"):
+            continue
+        res = state._trace_structure(x, y, int(tile.meeple_spot.split("_")[1]), "city")
+        if res["complete"]:
+            continue
+        for (tx, ty) in res["tiles"]:
+            t = state.board[(tx, ty)]
+            for side in range(4):
+                cell = (tx + DX[side], ty + DY[side])
+                if t.edges[side] != "C" or cell in state.board or cell in seen_cells:
+                    continue
+                seen_cells.add(cell)
+                # villes qui touchent cette case, par le côté qui lui fait face
+                cities = []
+                for d in range(4):
+                    nb = state.board.get((cell[0] + DX[d], cell[1] + DY[d]))
+                    if nb is None or nb.edges[OPPOSITE[d]] != "C":
+                        continue
+                    r = state._trace_structure(cell[0] + DX[d], cell[1] + DY[d], OPPOSITE[d], "city")
+                    key = frozenset(r["tiles"])
+                    if all(key != c[0] for c in cities):
+                        m = [0, 0]
+                        for (ax, ay) in r["tiles"]:
+                            mp = state.board[(ax, ay)].meeple_player
+                            if mp is not None and (state.board[(ax, ay)].meeple_spot or "").startswith("city"):
+                                tr = state._trace_structure(ax, ay, int(state.board[(ax, ay)].meeple_spot.split("_")[1]), "city")
+                                if frozenset(tr["tiles"]) == key:
+                                    m[mp] += 1
+                        cities.append((key, d, m, len(r["tiles"]) + r["shields"]))
+                if len(cities) < 2 or len({c[1] for c in cities}) < 2:
+                    continue
+                # chance qu'une tuile qui relie ces villes soit posée dans les prochains tirages
+                pile = _fit_counts(state)
+                total = sum(n for _, n in pile)
+                if not total:
+                    continue
+                link = 0
+                sides = [c[1] for c in cities]
+                for tt, n in pile:
+                    for rot in range(4):
+                        if not state.can_place(tt, cell[0], cell[1], rot):
+                            continue
+                        pt = PlacedTile(tt, cell[0], cell[1], rot)
+                        groups = _city_groups(pt.edges, pt.connected_city)
+                        if any(all(sd in g for sd in sides) for g in groups):
+                            link += n
+                            break
+                p_link = 1 - (1 - link / total) ** min(horizon, total)
+                merged = [sum(c[2][0] for c in cities), sum(c[2][1] for c in cities)]
+                top = max(merged)
+                if top == 0:
+                    continue
+                for pl in (0, 1):
+                    if merged[pl] == top:
+                        gained = sum(c[3] for c in cities if c[2][pl] == 0)
+                        bonus[pl] += 2 * gained * p_link
+    return bonus
+
+
 def _evaluate_position(state: GameState, player: int) -> float:
     """
     Heuristique d'évaluation de position.
@@ -1094,12 +1203,12 @@ def _evaluate_position(state: GameState, player: int) -> float:
                 shields = result["shields"]
                 if not result["complete"]:
                     potential = (n_tiles + shields) * 2
-                    openings = sum(1 for (tx, ty) in result["tiles"]
-                                   for s in range(4)
-                                   if state.board[(tx, ty)].edges[s] == "C"
-                                   and (tx + DX[s], ty + DY[s]) not in state.board)
-                    close_prob = max(0.1, 1.0 - openings * 0.2)
-                    pending_points[p] += potential * close_prob
+                    # v3.0.3 : chance de fermeture calculée sur le sac (chapitres 3 et 4 du
+                    # livre) : pour chaque case qui borde la ville, combien de tuiles restantes
+                    # peuvent s'y poser, et la chance d'en tirer une dans les prochains tours.
+                    close_prob = _city_close_prob(state, result["tiles"])
+                    # ville fermée : 2 pts par tuile et blason ; sinon 1 pt en fin de partie
+                    pending_points[p] += potential * close_prob + (n_tiles + shields) * (1 - close_prob)
             except:
                 pending_points[p] += 2
 
@@ -1114,6 +1223,12 @@ def _evaluate_position(state: GameState, player: int) -> float:
                 pending_points[p] += field_value
             except:
                 pending_points[p] += 3  # fallback: au moins 1 ville
+
+    # v3.0.3 : fusions de villes. Une case libre qui borde deux villes différentes sera
+    # souvent remplie par une tuile qui les relie : chaque joueur à égalité ou en tête
+    # des meeples dans la ville réunie marquera aussi les points de l'autre ville.
+    for p, bonus in _merge_bonus(state).items():
+        pending_points[p] += bonus
 
     pending_diff = pending_points[player] - pending_points[opponent]
 
@@ -2171,3 +2286,74 @@ def meeple_anchor(tile_type, rotation: int, spot):
         return r
     best = max(cands, key=lambda p: (min(margin(p), 9 if want != "R" else 3), -cands.index(p)))
     return (round(best[0]), round(best[1]))
+
+
+# ------------------------------------------------------------
+# Réponse de l'adversaire : Expectimax sur deux coups (v3.0.3)
+# ------------------------------------------------------------
+# Le MCTS juge un coup sur la position qu'il laisse. Ici, pour les meilleurs coups
+# qu'il propose, on envisage chaque tuile que l'adversaire peut piocher (pondérée par
+# le nombre d'exemplaires restant dans le sac), sa meilleure réponse avec cette tuile,
+# et on juge la position APRÈS cette réponse. C'est l'Expectimax du chapitre 11 du livre.
+
+def expectimax_rerank(state, tile_type, player, results, neural_eval=None,
+                      top_n: int = 12, time_limit: float = 8.0, leaf: str = "mix"):
+    """Reclasse les meilleurs coups du MCTS selon la réponse de l'adversaire.
+    Renvoie la liste results réordonnée ; chaque coup examiné reçoit
+    'expectimax' (chance de gagner, 0-100, après la réponse de l'adversaire)."""
+    import time as _time
+    from collections import Counter
+    if len(state.draw_pile) == 0 or not results:
+        return results
+    t0 = _time.time()
+    opp = 1 - player
+    use_net = neural_eval is not None and getattr(neural_eval, "use_value", False)
+
+    def judge(s):
+        """Chance de gagner pour player, position s (c'est de nouveau à lui de jouer).
+        leaf = "value" (réseau), "heur" (évaluation : sac et fusions) ou "mix" (moyenne)."""
+        h = _evaluate_position(s, player)
+        if not use_net or leaf == "heur":
+            return h
+        try:
+            v = neural_eval.evaluate(_state_to_dict(s, player), player)
+        except Exception:
+            return h
+        return v if leaf == "value" else (v + h) / 2
+
+    counts = Counter(id(t) for t in state.draw_pile)
+    types = {id(t): t for t in state.draw_pile}
+    total = sum(counts.values())
+    cands = results[:top_n]
+    for r in cands:
+        s1 = deepcopy(state)
+        s1.valid_positions = None
+        s1.place_tile(tile_type, r["x"], r["y"], r["rotation"],
+                      meeple_player=player if r["meeple"] else None, meeple_spot=r["meeple"])
+        expected, mass = 0.0, 0.0
+        for key, n in counts.items():
+            tt = types[key]
+            best_s, best_q = None, -1.0
+            for (x, y, rot) in s1.get_legal_placements(tt):
+                spots = [None]
+                if s1.meeples[opp] > 0:
+                    spots += _meeple_options(s1, tt, x, y, rot)
+                for sp in spots:
+                    s2 = deepcopy(s1)
+                    s2.valid_positions = None
+                    s2.place_tile(tt, x, y, rot, meeple_player=opp if sp else None, meeple_spot=sp)
+                    q = _evaluate_position(s2, opp)
+                    if q > best_q:
+                        best_q, best_s = q, s2
+            leaf = judge(best_s) if best_s is not None else judge(s1)
+            expected += n / total * leaf
+            mass += n / total
+            if _time.time() - t0 > time_limit:
+                break
+        r["expectimax"] = round(100 * expected / mass, 1) if mass else r["score"]
+        if _time.time() - t0 > time_limit:
+            break
+    examined = [r for r in cands if "expectimax" in r]
+    examined.sort(key=lambda r: r["expectimax"], reverse=True)
+    rest = [r for r in results if "expectimax" not in r]
+    return examined + rest

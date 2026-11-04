@@ -95,11 +95,15 @@ def analyze(state_json: str, sims: int = 1000, time_limit: float = 10.0, player_
     }
     start = time.time()
     results = E.mcts_search(state, state.current_tile, player_idx,
-                            simulations=int(sims), time_limit=float(time_limit),
+                            simulations=int(sims), time_limit=0.7 * float(time_limit),
                             neural_eval=_evaluator)
+    # v3.0.3 : réponse de l'adversaire (Expectimax sur deux coups) pour les meilleurs coups
+    results = E.expectimax_rerank(state, state.current_tile, player_idx, results,
+                                  neural_eval=_evaluator, top_n=10,
+                                  time_limit=max(1.5, 0.3 * float(time_limit)), leaf="mix")
     elapsed = time.time() - start
     moves = [{"x": r["x"], "y": r["y"], "rotation": r["rotation"], "edges": r["edges"],
-              "meeple": r["meeple"], "winRate": r["score"], "visits": r["visits"],
+              "meeple": r["meeple"], "winRate": r.get("expectimax", r["score"]), "visits": r["visits"],
               "meepleAt": E.meeple_anchor(state.current_tile, r["rotation"], r["meeple"]),
               "desc": r["desc"]} for r in results[:5]]
     return json.dumps({"status": "done", "result": {
