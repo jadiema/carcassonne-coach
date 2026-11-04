@@ -2034,3 +2034,140 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# ------------------------------------------------------------
+# Position du meeple sur la tuile tournée (affichage du coach, v3.0.3)
+# ------------------------------------------------------------
+# Même géométrie que le dessin de l'extension (tileSvg, 100 × 100, haut = bord 0).
+_SIDE_MID = [(50, 0), (100, 50), (50, 100), (0, 50)]
+_CORNER = [(0, 0), (100, 0), (100, 100), (0, 100)]
+_HS_POINT = [(75, 0), (100, 25), (100, 75), (75, 100), (25, 100), (0, 75), (0, 25), (25, 0)]
+
+
+def _in_poly(x, y, poly):
+    inside = False
+    for i in range(len(poly)):
+        (x1, y1), (x2, y2) = poly[i], poly[(i + 1) % len(poly)]
+        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+            inside = not inside
+    return inside
+
+
+def _tile_drawing(edges, groups, monastery):
+    """Fonction (x, y) → 'C', 'R', 'M' ou 'F' : ce que le dessin montre en ce point."""
+    city = [i for i in range(4) if edges[i] == "C"]
+    road = [i for i in range(4) if edges[i] == "R"]
+    connected = len(city) == 2 and any(len(g) == 2 for g in groups)
+    shapes = []
+    if len(city) == 4:
+        shapes.append(lambda x, y: True)
+    elif len(city) == 3:
+        k = next(i for i in range(4) if edges[i] != "C")
+        tri = [_CORNER[k], _CORNER[(k + 1) % 4],
+               (50 + (_SIDE_MID[k][0] - 50) * 0.05, 50 + (_SIDE_MID[k][1] - 50) * 0.05)]
+        shapes.append(lambda x, y, tri=tri: not _in_poly(x, y, tri))
+    elif connected:
+        i, j = city
+        if (j - i) % 2 == 1:
+            poly = []
+            for c in (_CORNER[i], _CORNER[(i + 1) % 4], _CORNER[j], _CORNER[(j + 1) % 4]):
+                if c not in poly:
+                    poly.append(c)
+        else:
+            poly = ([(0, 0), (100, 0), (72, 50), (100, 100), (0, 100), (28, 50)] if i == 0
+                    else [(0, 0), (50, 28), (100, 0), (100, 100), (50, 72), (0, 100)])
+        shapes.append(lambda x, y, poly=poly: _in_poly(x, y, poly))
+    else:
+        for i in city:
+            cx, cy = _SIDE_MID[i]
+            rx, ry = (52, 30) if i % 2 == 0 else (30, 52)
+            shapes.append(lambda x, y, cx=cx, cy=cy, rx=rx, ry=ry: ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1)
+
+    def dist_seg(x, y, a, b):
+        (ax, ay), (bx, by) = a, b
+        L = (bx - ax) ** 2 + (by - ay) ** 2
+        t = max(0, min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / L)) if L else 0
+        return ((x - ax - t * (bx - ax)) ** 2 + (y - ay - t * (by - ay)) ** 2) ** 0.5
+
+    road_paths = []
+    if len(road) == 2 and (road[1] - road[0]) % 2 == 0:
+        road_paths.append([_SIDE_MID[road[0]], _SIDE_MID[road[1]]])
+    elif len(road) == 2:
+        a, b = _SIDE_MID[road[0]], _SIDE_MID[road[1]]
+        pts = []
+        for n in range(21):
+            t = n / 20
+            pts.append(((1 - t) ** 2 * a[0] + 2 * t * (1 - t) * 50 + t * t * b[0],
+                        (1 - t) ** 2 * a[1] + 2 * t * (1 - t) * 50 + t * t * b[1]))
+        road_paths.append(pts)
+    else:
+        for i in road:
+            road_paths.append([_SIDE_MID[i], (50, 50)])
+
+    def look(x, y):
+        if monastery and 32 <= x <= 68 and 30 <= y <= 66:
+            return "M"
+        if any(dist_seg(x, y, p[n], p[n + 1]) <= 4.5 for p in road_paths for n in range(len(p) - 1)):
+            return "R"
+        if any(f(x, y) for f in shapes):
+            return "C"
+        return "F"
+    return look, road_paths
+
+
+def meeple_anchor(tile_type, rotation: int, spot):
+    """Point (x, y) sur 100 × 100, repère de la tuile DÉJÀ tournée (haut = 0), où dessiner
+    le meeple de l'emplacement spot ("city_0", "road_2", "field_5", "monastery") :
+    un point qui tombe bien dans la bonne zone du dessin, le plus loin possible de ses bords."""
+    if not spot:
+        return None
+    pt = PlacedTile(tile_type, 0, 0, rotation)
+    edges, groups = pt.edges, _city_groups(pt.edges, pt.connected_city)
+    look, road_paths = _tile_drawing(edges, groups, tile_type.monastery)
+    kind, _, idx = spot.partition("_")
+    if kind == "monastery":
+        return (50, 56)
+    idx = int(idx)
+    want = {"city": "C", "road": "R", "field": "F"}[kind]
+    pull = lambda p, k: (50 + (p[0] - 50) * k, 50 + (p[1] - 50) * k)
+    if kind == "city":
+        group = next((g for g in groups if idx in g), {idx})
+        sides = sorted(group)
+        cx = sum(_SIDE_MID[i][0] for i in sides) / len(sides)
+        cy = sum(_SIDE_MID[i][1] for i in sides) / len(sides)
+        cands = [pull((cx, cy), k) for k in (0.62, 0.5, 0.75, 0.4, 0.85, 0.3, 0.2, 0.0)]
+        cands += [pull(_SIDE_MID[i], k) for i in sides for k in (0.7, 0.8, 0.6)]
+    elif kind == "road":
+        path = next((p for p in road_paths if p[0] == _SIDE_MID[idx] or p[-1] == _SIDE_MID[idx]), road_paths[0])
+        if len(path) > 2:                                   # virage : milieu de la courbe
+            cands = [path[10], path[8], path[12]]
+        else:
+            a, b = path
+            cands = [(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t) for t in (0.45, 0.35, 0.55, 0.25, 0.65)]
+            if b == (50, 50):                               # bout de route vers un carrefour
+                cands = [(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t) for t in (0.45, 0.35, 0.55, 0.25)]
+    else:
+        seg = next((g for g in tile_field_segments(pt) if idx in g), {idx})
+        cands = []
+        for k in (0.75, 0.6, 0.85, 0.5, 0.4):
+            cands += [pull(_HS_POINT[h], k) for h in sorted(seg)]
+        cx = sum(_HS_POINT[h][0] for h in seg) / len(seg)
+        cy = sum(_HS_POINT[h][1] for h in seg) / len(seg)
+        cands = [pull((cx, cy), k) for k in (0.8, 0.65, 0.5)] + cands
+
+    def margin(p):
+        """Distance au bord de la zone : on garde un point bien à l'intérieur."""
+        if look(*p) != want:
+            return -1
+        r = 0
+        for rr in (3, 6, 9, 12):
+            ring = [(p[0] + rr * dx, p[1] + rr * dy) for dx, dy in
+                    ((1, 0), (-1, 0), (0, 1), (0, -1), (0.7, 0.7), (-0.7, 0.7), (0.7, -0.7), (-0.7, -0.7))]
+            if all(0 <= q[0] <= 100 and 0 <= q[1] <= 100 and look(*q) == want for q in ring):
+                r = rr
+            else:
+                break
+        return r
+    best = max(cands, key=lambda p: (min(margin(p), 9 if want != "R" else 3), -cands.index(p)))
+    return (round(best[0]), round(best[1]))

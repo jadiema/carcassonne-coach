@@ -99,6 +99,7 @@ def analyze(state_json: str, sims: int = 1000, time_limit: float = 10.0, player_
     elapsed = time.time() - start
     moves = [{"x": r["x"], "y": r["y"], "rotation": r["rotation"], "edges": r["edges"],
               "meeple": r["meeple"], "winRate": r["score"], "visits": r["visits"],
+              "meepleAt": E.meeple_anchor(state.current_tile, r["rotation"], r["meeple"]),
               "desc": r["desc"]} for r in results[:5]]
     return json.dumps({"status": "done", "result": {
         "info": info,

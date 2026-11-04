@@ -1091,7 +1091,7 @@
   // tile = tuile en main (description : villes séparées, monastère, blason).
   let analysisTile = null;
 
-  function tileSvg(edges, tile, size) {
+  function tileSvg(edges, tile, size, meepleAt = null, meepleColor = "#f9e2af") {
     if (!edges || edges.length !== 4) return "";
     const F = "#8db36a", C = "#c9924a", R = "#f3ede1", INK = "#1e2b2f";
     const desc = (tile && tile.desc) || "";
@@ -1156,6 +1156,15 @@
       const x = 50 + (cx - 50) * 0.55, y = 50 + (cy - 50) * 0.55;
       g += `<polygon points="${x - 8},${y - 9} ${x + 8},${y - 9} ${x + 8},${y + 2} ${x},${y + 10} ${x - 8},${y + 2}" fill="#2f5d8a"/>`;
     }
+    // Meeple à l'emplacement choisi par le moteur (coordonnées de la tuile tournée)
+    if (meepleAt && meepleAt.length === 2) {
+      const [mx, my] = meepleAt, k = 0.62;
+      const body = [[-6, -6], [-26, 2], [-24, 10], [-10, 6], [-16, 30], [-6, 30], [0, 16],
+                    [6, 30], [16, 30], [10, 6], [24, 10], [26, 2], [6, -6]];
+      const poly = body.map(([px, py]) => `${(mx + px * k * 0.62).toFixed(1)},${(my + 4 + py * k * 0.62).toFixed(1)}`).join(" ");
+      g += `<polygon points="${poly}" fill="${meepleColor}" stroke="${INK}" stroke-width="2.2" stroke-linejoin="round"/>`;
+      g += `<circle cx="${mx}" cy="${(my + 4 - 17 * k * 0.62).toFixed(1)}" r="${(10 * k * 0.62).toFixed(1)}" fill="${meepleColor}" stroke="${INK}" stroke-width="2.2"/>`;
+    }
     g += `<rect width="100" height="100" fill="none" stroke="${INK}" stroke-width="3"/>`;
     return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block;flex:none">${g}</svg>`;
   }
@@ -1185,12 +1194,12 @@
 
         const rotNames = ["0°", "90°↻", "180°", "270°↺"];
 
-        html += `<div class="carc-move-card" data-x="${m.x}" data-y="${m.y}" data-rank="${i+1}" data-edges="${m.edges}"
+        html += `<div class="carc-move-card" data-x="${m.x}" data-y="${m.y}" data-rank="${i+1}" data-edges="${m.edges}" data-meeple="${m.meepleAt ? m.meepleAt.join(",") : ""}"
                     style="background:#313244;border-radius:8px;padding:10px;margin-bottom:6px;
                     cursor:pointer; transition: background 0.15s;
                     ${i === 0 ? "border:1px solid #a6e3a1;" : "border:1px solid transparent;"}">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-            <span style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px">${tileSvg(m.edges, analysisTile, 30)}${medal} (${m.x}, ${m.y}) ${rotNames[m.rotation]}</span>
+            <span style="font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px">${tileSvg(m.edges, analysisTile, 30, m.meepleAt)}${medal} (${m.x}, ${m.y}) ${rotNames[m.rotation]}</span>
             <span style="font-size:16px;font-weight:700;color:${barColor}">${m.winRate}%</span>
           </div>
           <div style="font-size:12px;color:#cdd6f4;margin-bottom:3px">
@@ -1214,7 +1223,8 @@
         const x = Number(card.dataset.x);
         const y = Number(card.dataset.y);
         const rank = Number(card.dataset.rank);
-        highlightPosition(x, y, rank, card.dataset.edges);
+        highlightPosition(x, y, rank, card.dataset.edges,
+                          card.dataset.meeple ? card.dataset.meeple.split(",").map(Number) : null);
 
         // Style actif sur la carte cliquée
         container.querySelectorAll(".carc-move-card").forEach(c => {
@@ -1233,7 +1243,7 @@
 
     // Auto-highlight du meilleur coup
     if (moves && moves.length > 0) {
-      highlightPosition(moves[0].x, moves[0].y, 1, moves[0].edges);
+      highlightPosition(moves[0].x, moves[0].y, 1, moves[0].edges, moves[0].meepleAt);
     }
   }
 
@@ -1244,7 +1254,7 @@
     document.querySelectorAll(".carc-coach-highlight").forEach(el => el.remove());
   }
 
-  function highlightPosition(x, y, rank, edges) {
+  function highlightPosition(x, y, rank, edges, meepleAt = null) {
     clearHighlights();
 
     // Sur BGA, les emplacements libres sont des éléments indépendants place_XxY
@@ -1286,7 +1296,7 @@
         ghost.style.cssText = `
           position: absolute; inset: 4px; z-index: 9998; pointer-events: none; opacity: 0.85;
         `;
-        ghost.innerHTML = tileSvg(edges, analysisTile, "100%").replace('style="display:block;flex:none"', 'style="display:block;width:100%;height:100%"');
+        ghost.innerHTML = tileSvg(edges, analysisTile, "100%", meepleAt).replace('style="display:block;flex:none"', 'style="display:block;width:100%;height:100%"');
         placeEl.appendChild(ghost);
       }
       // Les place_ de BGA sont déjà en position absolute

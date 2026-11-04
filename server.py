@@ -8,6 +8,7 @@ Mode asynchrone : /analyze lance un thread et retourne un job_id,
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from carcassonne_engine import GameState, mcts_search, _evaluate_position
+import carcassonne_engine as E
 import time
 import threading
 import uuid
@@ -133,6 +134,7 @@ def analyze():
                 top_moves.append({
                     "x": r["x"], "y": r["y"], "rotation": r["rotation"],
                     "edges": r["edges"], "meeple": r["meeple"],
+                    "meepleAt": E.meeple_anchor(state.current_tile, r["rotation"], r["meeple"]),
                     "winRate": r["score"], "visits": r["visits"], "desc": r["desc"],
                 })
 
