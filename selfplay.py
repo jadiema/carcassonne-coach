@@ -25,21 +25,22 @@ from pathlib import Path
 _net = None
 
 
-def _load_net(model):
-    """Réseau calculé en NumPy (sans PyTorch) : léger, un par processus."""
+def _load_net(model, use_value=False):
+    """Réseau calculé en NumPy (sans PyTorch) : léger, un par processus.
+    use_value=True : la tête value juge les positions (comme le coach depuis la 3.0.3)."""
     global _net
     if _net is None:
         with contextlib.redirect_stdout(io.StringIO()):
             import browser_coach
-            _net = browser_coach.NumpyNeuralEvaluator(model) if Path(model).exists() else False
+            _net = browser_coach.NumpyNeuralEvaluator(model, use_value=use_value) if Path(model).exists() else False
     return _net or None
 
 
 def play_one(args):
-    seed, sims, explore, model, out_dir = args
+    seed, sims, explore, model, out_dir, use_value = args
     import carcassonne_engine as E
     random.seed(seed)
-    net = _load_net(model)
+    net = _load_net(model, use_value)
     T = E.TILE_TYPES
     g = E.GameState(2)
     g.init_draw_pile()
@@ -68,7 +69,7 @@ def play_one(args):
         player = 1 - player
     g.final_scoring()
     name = f"sp_{time.strftime('%Y%m%d-%H%M%S')}_{seed}.json"
-    data = {"selfplay": True, "version": 1, "seed": seed, "sims": sims,
+    data = {"selfplay": True, "version": 1, "seed": seed, "sims": sims, "value": bool(use_value),
             "model": Path(model).name if net else None, "start": T.index(start), "moves": moves,
             "final_scores": list(g.scores),
             "players": [{"name": "coach A", "score": g.scores[0]}, {"name": "coach B", "score": g.scores[1]}],
@@ -87,13 +88,16 @@ def main():
     ap.add_argument("--explore", type=int, default=10)
     ap.add_argument("--model", default="carcassonne_model.pt")
     ap.add_argument("--out", default="parties/selfplay")
+    ap.add_argument("--value", action="store_true",
+                    help="la tête value juge les positions (recherche plus forte, comme la 3.0.3)")
     a = ap.parse_args()
     from multiprocessing import Pool
     base = int(time.time())
-    jobs = ((base + i, a.sims, a.explore, a.model, a.out)
+    jobs = ((base + i, a.sims, a.explore, a.model, a.out, a.value)
             for i in (range(a.games) if a.games else itertools.count()))
     print(f"🏰 Auto-jeu : {a.workers} parties en parallèle, {a.sims} simulations par coup, "
-          f"réseau {'oui' if Path(a.model).exists() else 'non (heuristique seule)'} → {a.out}")
+          f"réseau {Path(a.model).name if Path(a.model).exists() else 'non (heuristique seule)'}"
+          f"{' avec tête value' if a.value else ''} → {a.out}")
     print("   Ctrl+C pour arrêter (les parties terminées sont déjà enregistrées).\n")
     done, t0 = 0, time.time()
     try:

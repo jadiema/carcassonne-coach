@@ -1041,6 +1041,35 @@ def build_model(n_rot: int = POLICY_ROTATIONS):
 # ENTRAÎNEMENT
 # ============================================================
 
+
+def _load_game_for_training(job):
+    """Lit une partie et la transforme en exemples compacts (appelé en parallèle par train)."""
+    path, selfplay_keep, legacy = job
+    name = Path(path).name
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        players = data.get("players", [])
+        if len(players) < 2:
+            return "error:pas de joueurs", name, []
+        scores = [p.get("score", 0) for p in players]
+        if scores[0] == scores[1]:
+            return "equal", name, []
+        if all(sc == 0 for sc in scores):
+            return "zero", name, []
+        if data.get("selfplay"):
+            examples, status = generate_training_data_selfplay(path, keep=selfplay_keep), "selfplay"
+        elif data.get("rawLog"):
+            examples, status = generate_training_data_v2(path), "v2"
+        elif legacy:
+            examples, status = generate_policy_only_legacy(path), "legacy"
+        else:
+            return "legacy_skipped", name, []
+        return status, name, [(g.astype(np.float16), sc, lab, _to_target(pol)) for g, sc, lab, pol, _ in examples]
+    except Exception as e:
+        return f"error:{type(e).__name__}: {e}", name, []
+
+
 def train(data_dir: str, model_path: str = "carcassonne_model.pt",
           epochs: int = 100, lr: float = 0.001, legacy: bool = False,
           value_detach: bool = True, keep_split: bool = True,
@@ -1080,46 +1109,37 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     n_legacy = 0
     all_games = []
 
-    for jf in json_files:
-        try:
-            with open(jf, "r", encoding="utf-8") as f:
-                check_data = json.load(f)
-            players = check_data.get("players", [])
-            if len(players) < 2:
-                skipped_error += 1
-                continue
-            scores = [p.get("score", 0) for p in players]
-
-            # Filtrer les parties avec scores identiques (vrais égalités ou erreurs)
-            if scores[0] == scores[1]:
+    # v33 : lecture des parties en parallèle (un processus par cœur), avec progression
+    import os as _os
+    from multiprocessing import Pool as _Pool
+    jobs = [(str(jf), selfplay_keep, legacy) for jf in json_files]
+    n_workers = max(1, min(_os.cpu_count() or 1, 8))
+    t_read = __import__("time").time()
+    with _Pool(n_workers) as pool:
+        for i, (status, name, examples) in enumerate(pool.imap(_load_game_for_training, jobs, chunksize=8), 1):
+            if status == "equal":
                 skipped_equal += 1
-                continue
-            # Filtrer les parties avec tous les scores à 0
-            if all(s == 0 for s in scores):
+            elif status == "zero":
                 skipped_zero += 1
-                continue
-
-            if check_data.get("selfplay"):
-                examples = generate_training_data_selfplay(str(jf), keep=selfplay_keep)
-                n_selfplay += 1
-            elif check_data.get("rawLog"):
-                examples = generate_training_data_v2(str(jf))
-                n_v2 += 1
-            elif legacy:
-                examples = generate_policy_only_legacy(str(jf))
-                n_legacy += 1 if examples else 0
-            else:
+            elif status == "legacy_skipped":
                 skipped_legacy += 1
-                continue
-            for grid, scalars, label, policy, _ in examples:
-                all_games.append(jf.name)
-                all_grids.append(grid.astype(np.float16))   # v28 : float16 dès la collecte
-                all_scalars.append(scalars)
-                all_labels.append(label)
-                all_policies.append(_to_target(policy))
-        except Exception as e:
-            print(f"  ⚠️ {jf.name}: {type(e).__name__}: {e}")
-            skipped_error += 1
+            elif status.startswith("error"):
+                skipped_error += 1
+                if skipped_error <= 20:
+                    print(f"  ⚠️ {name}: {status[6:]}")
+            else:
+                n_selfplay += status == "selfplay"
+                n_v2 += status == "v2"
+                n_legacy += 1 if (status == "legacy" and examples) else 0
+                for grid, scalars, label, target in examples:
+                    all_games.append(name)
+                    all_grids.append(grid)
+                    all_scalars.append(scalars)
+                    all_labels.append(label)
+                    all_policies.append(target)
+            if i % 500 == 0 or i == len(jobs):
+                el = __import__("time").time() - t_read
+                print(f"  … {i}/{len(jobs)} parties lues ({el / 60:.0f} min, {n_workers} processus)", flush=True)
 
     print(f"  Parties rejouées exactement (rawLog): {n_v2}")
     print(f"  Parties d'auto-jeu (selfplay/): {n_selfplay}")
