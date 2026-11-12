@@ -136,6 +136,7 @@ Rejoue les parties de validation et mesure, sur chaque position, si le coup rée
 | `prix_meeple.py` | Suit chaque meeple de sa pose à son retour : rendement (points par tour bloqué) selon la phase, la structure et le stock de meeples | `python prix_meeple.py parties` |
 | `prix_tuile_blocage.py` | Prix de la tuile de blocage | `python prix_tuile_blocage.py parties` |
 | `stats_tuiles.py` | Statistiques des tuiles | `python stats_tuiles.py parties` |
+| `virage_premier_tour.py` | Premier tour avec un virage simple : durée de blocage d’un meeple posé sur la route, ou fréquence du virage posé sans meeple (le « coup de Nazario ») | `python virage_premier_tour.py parties` |
 | `bayes_paysans.py` | Cherche deux styles de joueurs (agressif / prudent) dans les prés par un mélange de lois binomiales (algorithme EM) | `python bayes_paysans.py parties` |
 | `diag_rotation.py` | Diagnostic de la convention de rotation de l’augmentation des données | `python diag_rotation.py parties` |
 | `check_spots.py` | Vérifie la table des emplacements de meeples BGA | `python check_spots.py parties` |
@@ -171,7 +172,8 @@ carcassonne-coach/
 ├── server.py, start_server.bat Serveur local facultatif (port 5555)
 ├── selfplay.py, arena.py, bench_mcts.py   Auto-jeu, matchs, vitesse
 ├── replay_bga.py, evaluate_model.py       Rejeu et évaluation
-├── prix_meeple.py, prix_tuile_blocage.py, stats_tuiles.py, bayes_paysans.py   Analyses
+├── prix_meeple.py, prix_tuile_blocage.py, stats_tuiles.py,
+│   virage_premier_tour.py, bayes_paysans.py                Analyses
 ├── diag_rotation.py, check_spots.py, calibrate_spots.py   Diagnostics
 ├── build_xpi.py                Fabrication du paquet de l’extension
 ├── updates.json                Mises à jour automatiques de l’extension
