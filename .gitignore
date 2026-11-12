@@ -37,3 +37,4 @@ arena/
 # Paquets de l’extension (fabriqués par build_xpi.py)
 *.xpi
 carcassonne_model_v*
+Sauvegarde_coach_carcassonne/
