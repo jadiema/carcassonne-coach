@@ -1,186 +1,155 @@
-# 🏰 Carcassonne Coach
+# Carcassonne Coach
 
-Un coach d’intelligence artificielle pour **Carcassonne** (jeu de base, 2 joueurs) sur **Board Game Arena** (BGA).
-Une extension Firefox lit une partie **terminée** ou un **replay** (l’analyse est désactivée pendant une partie en cours, conformément aux règles de Board Game Arena) ; un serveur local cherche les meilleurs coups avec une **recherche arborescente de Monte-Carlo (MCTS)** guidée par un **réseau de neurones** entraîné sur des parties de joueurs forts ; les meilleurs coups s’affichent sur le plateau.
+Un coach d’intelligence artificielle pour Carcassonne (jeu de base, 2 joueurs) sur Board Game Arena (BGA). L’extension Firefox lit une partie terminée ou un replay (l’analyse est désactivée pendant une partie en cours, conformément aux règles de Board Game Arena), cherche les meilleurs coups avec une recherche arborescente de Monte-Carlo (MCTS) guidée par un réseau de neurones, et les affiche sur le plateau. Tout le calcul se fait dans le navigateur ; aucune donnée n’est envoyée ailleurs.
 
 > Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena. Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH. Le coach ne reproduit aucune image du jeu : il lit la page de Board Game Arena dans votre navigateur.
 
----
+Ce dépôt accompagne le livre *Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle* (Éditions Jadiema).
 
 ## Sommaire
 
-1. [Fonctionnement](#fonctionnement)
-2. [Installation](#installation)
-3. [Utilisation sur Board Game Arena](#utilisation-sur-board-game-arena)
-4. [Constituer les données d’entraînement](#constituer-les-données-dentraînement)
-5. [Entraîner et évaluer le réseau](#entraîner-et-évaluer-le-réseau)
-6. [Scripts d’analyse](#scripts-danalyse)
-7. [Réglages](#réglages)
-8. [Organisation des fichiers](#organisation-des-fichiers)
-9. [Historique et état actuel](#historique-et-état-actuel)
-10. [Limites connues](#limites-connues)
+- [Installation](#installation)
+- [Utilisation sur Board Game Arena](#utilisation-sur-board-game-arena)
+- [Fonctionnement](#fonctionnement)
+- [Serveur local (facultatif)](#serveur-local-facultatif)
+- [Constituer les données d’entraînement](#constituer-les-données-dentraînement)
+- [Entraîner et évaluer le réseau](#entraîner-et-évaluer-le-réseau)
+- [Scripts d’analyse](#scripts-danalyse)
+- [Fabriquer le paquet de l’extension](#fabriquer-le-paquet-de-lextension)
+- [Organisation des fichiers](#organisation-des-fichiers)
+- [Historique et état actuel](#historique-et-état-actuel)
+- [Limites connues](#limites-connues)
+- [Licence](#licence)
 
----
+## Installation
+
+1. Dans Firefox (version 140 ou plus récente), ouvrir la [dernière version](https://github.com/jadiema/carcassonne-coach/releases/latest).
+2. Cliquer sur `carcassonne-coach.xpi`, puis sur **Ajouter**.
+
+C’est tout : rien d’autre à installer. L’extension est signée par Mozilla, elle reste en place après le redémarrage de Firefox et les versions suivantes s’installent automatiquement.
+
+## Utilisation sur Board Game Arena
+
+1. Ouvrir une partie terminée ou un replay de Carcassonne sur BGA.
+2. Cliquer sur le bouton 🏰 ajouté par l’extension, choisir son joueur et le temps d’analyse.
+3. Lancer l’analyse : les meilleurs coups apparaissent sur le plateau. La tuile conseillée est dessinée dans sa bonne orientation, avec le meeple à sa place.
+
+L’interface existe en français et en anglais : cliquer sur le drapeau du panneau pour changer de langue (le choix est mémorisé).
 
 ## Fonctionnement
 
 ```
- Firefox (boardgamearena.com)                     Ordinateur local
-┌──────────────────────────────┐   HTTP    ┌────────────────────────────────────┐
-│ content-script.js            │ ───────▶  │ server.py  (Flask, port 5555)       │
-│  · lit plateau, tuile en     │  /analyze │   └─ carcassonne_engine.py          │
-│    main, cases libres, sac   │           │        · règles, décompte           │
-│  · affiche les coups         │ ◀───────  │        · MCTS (UCB1 / PUCT)         │
-│    recommandés               │  /result  │   └─ neural_evaluator.py            │
-└──────────────────────────────┘           │        · réseau valeur + politique  │
-                                           └────────────────────────────────────┘
+ Firefox (boardgamearena.com)
+┌───────────────────────────────┐         ┌──────────────────────────────────────┐
+│ content-script.js             │         │ engine_worker.js (Pyodide + NumPy)   │
+│  · lit plateau, tuile en      │ ──────▶ │   └─ browser_coach.py                │
+│    main, cases libres, sac    │         │        · carcassonne_engine.py       │
+│  · affiche les coups          │ ◀────── │          règles, décompte, MCTS      │
+│    recommandés                │         │        · réseau en NumPy             │
+└───────────────────────────────┘         │          (torch_free.py)             │
+                                          └──────────────────────────────────────┘
+                    (si lancé : server.py sur le port 5555, environ deux fois plus rapide)
 ```
 
-1. **L’extension** (`manifest.json`, `content-script.js`, `background.js`, `popup.html`) lit la position sur BGA : plateau, tuile en main, cases libres, tuiles restantes, scores et meeples.
-2. **Le serveur** (`server.py`) reçoit la position, lance l’analyse dans un fil séparé et renvoie un identifiant ; l’extension interroge ensuite le résultat (mode asynchrone).
-3. **Le moteur** (`carcassonne_engine.py`) génère les coups légaux, les filtre avec une heuristique, puis lance le MCTS pendant le temps choisi (≈ 2 600 parties d’essai en 15 s).
-4. **Le réseau** (`neural_evaluator.py`) fournit :
-   - une **politique** : une probabilité pour chaque (case, rotation), qui oriente l’exploration et peut repêcher des coups écartés par l’heuristique ;
-   - une **valeur** : la chance de victoire (désactivée par défaut, voir [Limites](#limites-connues)).
+- **L’extension** lit la position sur BGA : plateau, tuile en main, cases libres, tuiles restantes, scores et meeples.
+- **Le moteur Python** (`carcassonne_engine.py`) tourne dans le navigateur grâce à Pyodide 0.26.4. Il génère les coups légaux, puis lance le MCTS pendant le temps choisi. Les coups sont classés par nombre de visites, et le prix d’un meeple immobilisé est pris en compte.
+- **Le réseau** (`carcassonne_model.pt`, lu sans PyTorch par `torch_free.py`) fournit :
+  - une **politique** : une probabilité pour chaque (case, rotation), qui oriente l’exploration ;
+  - une **valeur** : la chance de victoire, qui juge les positions dans la recherche.
+- **La réponse de l’adversaire** (`expectimax_rerank`) départage les meilleurs coups en regardant aussi le coup suivant de l’adversaire (Expectimax sur deux coups), avec une chance de fermer les villes calculée sur le sac et les fusions de villes.
 
----
+## Serveur local (facultatif)
 
-## Installation
+L’extension n’a besoin de rien d’autre. Pour aller environ deux fois plus vite, on peut lancer le serveur Python du dépôt : l’extension l’utilise alors automatiquement.
 
-### Prérequis
-
-- **Python 3.12** (testé sous Windows 10/11)
-- **Firefox 109 ou plus récent**
-- Git (pour cloner le dépôt)
-
-### Dépendances Python
-
-```bash
+```
 pip install -r requirements.txt
-```
-
-PyTorch en version CPU suffit. Si l’installation de `torch` échoue, suivre les instructions de [pytorch.org](https://pytorch.org/get-started/locally/).
-Sans PyTorch, le serveur fonctionne quand même, avec l’heuristique seule.
-
-### Lancer le serveur
-
-Sous Windows : double-cliquer sur **`start_server.bat`** (installe Flask si besoin puis lance le serveur).
-Ou en ligne de commande :
-
-```bash
 python server.py
 ```
 
-Le serveur écoute sur `http://localhost:5555`. Au démarrage, il doit afficher `Réseau de neurones chargé avec succès` si `carcassonne_model.pt` est présent.
-
-### Installer l’extension Firefox
-
-L’extension n’est pas signée : elle s’installe en mode temporaire.
-
-1. Ouvrir `about:debugging#/runtime/this-firefox`
-2. **Charger un module complémentaire temporaire…**
-3. Choisir le fichier `manifest.json` du dépôt
-
-L’extension est à recharger après chaque redémarrage de Firefox (bouton **Actualiser** dans `about:debugging` après une modification des fichiers).
-
----
-
-## Utilisation sur Board Game Arena
-
-1. Lancer le serveur, ouvrir une partie de Carcassonne sur BGA.
-2. Cliquer sur le bouton **🏰** ajouté par l’extension, choisir son joueur et le temps d’analyse (de 5 secondes à 10 minutes).
-3. Lancer l’analyse : les meilleurs coups apparaissent en surbrillance sur le plateau, avec leur taux de victoire estimé.
-
-Le panneau signale qu’en début de partie (plus de 30 tuiles restantes) les écarts entre coups sont souvent dans le bruit de la simulation.
-
----
+Sous Windows, `start_server.bat` fait la même chose. Le serveur écoute sur `http://127.0.0.1:5555`.
 
 ## Constituer les données d’entraînement
 
-1. Sur BGA, ouvrir une partie **terminée** (de préférence entre joueurs forts) et cliquer sur le bouton **JSON** de l’extension.
-2. Ranger les fichiers dans le dossier **`parties/`**.
+1. Sur BGA, ouvrir une partie terminée (de préférence entre joueurs forts) et cliquer sur le bouton JSON de l’extension.
+2. Ranger les fichiers dans le dossier `parties/`.
 3. Vérifier que chaque partie se rejoue exactement :
 
-```bash
+```
 python replay_bga.py parties
 ```
 
 Chaque partie doit afficher `✅ … rejouée à l’identique` : le rejeu refait tous les coups et compare les scores finaux à ceux de BGA. Les parties en échec sont écartées de l’entraînement.
 
-**Parties en tuiles « 1re édition ».** Dans les replays, BGA affiche l’édition choisie par les joueurs ; l’extension ne reconnaît pas ces images. `replay_bga.py` retrouve alors les tuiles par déduction et **apprend** la correspondance image → type dans `ed1_art_table.json`. Relancer le contrôle une seconde fois permet souvent de rejouer les parties qui avaient échoué.
+**Parties en tuiles « 1re édition ».** Dans les replays, BGA affiche l’édition choisie par les joueurs ; l’extension ne reconnaît pas ces images. `replay_bga.py` retrouve alors les tuiles par déduction et apprend la correspondance image → type dans `ed1_art_table.json`. Relancer le contrôle une seconde fois permet souvent de rejouer les parties qui avaient échoué.
 
-> Le contenu de `parties/` n’est **pas versionné** (voir `.gitignore`) : ce sont les parties d’autres joueurs, et le dossier pèse plusieurs dizaines de Mo. Seul `carcassonne_model.validation.json` (liste des 15 parties de validation) est suivi.
-
----
+> Le contenu de `parties/` n’est pas versionné : ce sont les parties d’autres joueurs, avec leurs pseudos. Seul `carcassonne_model.validation.json` (liste des parties de validation) est suivi.
 
 ## Entraîner et évaluer le réseau
 
+L’entraînement demande PyTorch ; une carte graphique (CUDA) l’accélère nettement.
+
+### Auto-jeu
+
+```
+python selfplay.py --value
+```
+
+Le moteur joue contre lui-même avec le réseau courant ; les parties sont rangées dans `parties/`.
+
 ### Entraîner
 
-```bash
-python neural_evaluator.py train parties 30
+```
+python neural_evaluator.py train parties 30 --selfplay-keep=0.04
 ```
 
 - 30 époques au maximum, arrêt automatique après 4 époques sans progrès en validation ;
-- la **validation est figée** : les mêmes 15 parties (`carcassonne_model.validation.json`) servent d’examen d’un entraînement à l’autre ; `--new-split` en tire de nouvelles ;
-- chaque plateau est présenté sous ses **4 rotations** (augmentation des données) ;
-- le meilleur modèle (politique) est enregistré dans `carcassonne_model.pt`, la meilleure tête valeur dans `carcassonne_model.value.pt`.
+- la validation est figée (`carcassonne_model.validation.json`) ; `--new-split` en tire une nouvelle ;
+- chaque plateau est présenté sous ses 4 rotations ;
+- `--selfplay-keep` règle la part des positions d’auto-jeu conservées ;
+- les parties sont lues en parallèle.
 
-Options : `--new-split` (nouveau tirage de validation), `--value-joint` (la valeur influence aussi le tronc commun), `--legacy` (ancien format).
-
-Au début de l’entraînement, vérifier la ligne **« Contrôle des rotations »** : aucune rotation ne doit rester « sans équivalent ».
-
-Mémoire : environ 7 Go pour 400 parties. Fermer les autres applications pendant l’entraînement.
+Au début de l’entraînement, vérifier la ligne « Contrôle des rotations » : aucune rotation ne doit rester « sans équivalent ».
 
 ### Évaluer
 
-```bash
+```
+python arena.py --a carcassonne_model_v33.pt --b carcassonne_model_v28.pt
+```
+
+Fait jouer deux configurations l’une contre l’autre et donne l’écart en Elo. Options : `--sims-a/b` (nombre de simulations), `--value-a/b` (tête valeur), `--reply-a/b` (réponse de l’adversaire).
+
+```
 python evaluate_model.py parties
 ```
 
-Rejoue les parties de validation et mesure, sur chaque position, si le coup réellement joué par le joueur fort figure dans le top 1 / top 3 de chaque méthode (hasard, heuristique, réseau), puis si la valeur prédit le vainqueur mieux que « celui qui mène gagne ».
+Rejoue les parties de validation et mesure, sur chaque position, si le coup réellement joué par le joueur fort figure dans le top 1 / top 3 de chaque méthode.
 
-### Résultats actuels (401 parties, modèle v28)
-
-| Méthode (coup complet : case + rotation) | Top 1 | Top 3 |
-| --- | --- | --- |
-| Hasard parmi les coups légaux | 6,4 % | 19,0 % |
-| Heuristique du moteur | 25,8 % | 42,7 % |
-| **Réseau, politique (case + rotation)** | **35,1 %** | **61,9 %** |
-| Réseau, case seule | 41,9 % | 71,4 % |
-
----
+`bench_mcts.py` mesure la vitesse de la recherche.
 
 ## Scripts d’analyse
 
 | Script | Rôle | Commande |
-| --- | --- | --- |
+|---|---|---|
 | `replay_bga.py` | Rejoue les parties et vérifie les scores finaux ; apprend les images de la 1re édition | `python replay_bga.py parties` |
 | `evaluate_model.py` | Compare réseau, heuristique et hasard sur les parties de validation | `python evaluate_model.py parties` |
-| `prix_meeple.py` | Suit chaque meeple de sa pose à son retour : rendement λ (points par tour bloqué) selon la phase, la structure et le stock de meeples | `python prix_meeple.py parties` |
+| `prix_meeple.py` | Suit chaque meeple de sa pose à son retour : rendement (points par tour bloqué) selon la phase, la structure et le stock de meeples | `python prix_meeple.py parties` |
+| `prix_tuile_blocage.py` | Prix de la tuile de blocage | `python prix_tuile_blocage.py parties` |
+| `stats_tuiles.py` | Statistiques des tuiles | `python stats_tuiles.py parties` |
 | `bayes_paysans.py` | Cherche deux styles de joueurs (agressif / prudent) dans les prés par un mélange de lois binomiales (algorithme EM) | `python bayes_paysans.py parties` |
 | `diag_rotation.py` | Diagnostic de la convention de rotation de l’augmentation des données | `python diag_rotation.py parties` |
 | `check_spots.py` | Vérifie la table des emplacements de meeples BGA | `python check_spots.py parties` |
 | `calibrate_spots.py` | Recherche l’affectation des paysans ambigus quand seul le décompte final diffère de BGA | `python calibrate_spots.py parties` |
 
-Les fichiers produits (`prix_meeple.csv`, `prix_meeple.png`, `bayes_paysans.csv`) ne sont pas versionnés.
+Les fichiers produits (CSV, PNG) ne sont pas versionnés.
 
----
+## Fabriquer le paquet de l’extension
 
-## Réglages
-
-| Réglage | Valeurs | Effet |
-| --- | --- | --- |
-| Variable d’environnement `CARCASSONNE_POLICY` | `rotation` (défaut) / `case` | Politique du réseau par (case, rotation), ou par case seule comme avant la v28 |
-| Temps d’analyse | 5 s à 10 min (panneau de l’extension) | ≈ 2 600 parties d’essai en 15 s, ≈ 11 000 en 1 min |
-
-Exemple sous PowerShell, pour comparer avec l’ancien mode :
-
-```powershell
-$env:CARCASSONNE_POLICY="case"; python server.py
+```
+python build_xpi.py
 ```
 
----
+Produit `carcassonne-coach-<version>.xpi`, à faire signer par Mozilla. **Ne pas utiliser `web-ext build`**, qui omet les fichiers `.zip` (dont `pyodide/python_stdlib.zip`, indispensable).
 
 ## Organisation des fichiers
 
@@ -190,56 +159,52 @@ carcassonne-coach/
 ├── content-script.js           Lecture de la partie sur BGA, affichage des coups
 ├── content-style.css
 ├── background.js
-├── popup.html
+├── engine_worker.js            Moteur dans le navigateur (Pyodide)
+├── popup.html, popup.js
 ├── images/                     Icônes de l’extension
-├── server.py                   Serveur Flask local (port 5555, mode asynchrone)
-├── start_server.bat            Lanceur Windows du serveur
+├── pyodide/                    Pyodide 0.26.4 et NumPy
+├── browser_coach.py            Point d’entrée du coach dans le navigateur
+├── torch_free.py               Lecture du réseau sans PyTorch
 ├── carcassonne_engine.py       Règles, décompte, génération des coups, MCTS
-├── neural_evaluator.py         Encodage du plateau (24 calques 25×25), réseau, entraînement
-├── replay_bga.py               Rejeu exact des parties BGA
-├── evaluate_model.py           Évaluation du réseau
-├── prix_meeple.py              Analyse du prix d’un meeple
-├── bayes_paysans.py            Analyse bayésienne des styles de joueurs
-├── diag_rotation.py, check_spots.py, calibrate_spots.py   Outils de diagnostic
+├── neural_evaluator.py         Encodage du plateau, réseau, entraînement
+├── server.py, start_server.bat Serveur local facultatif (port 5555)
+├── selfplay.py, arena.py, bench_mcts.py   Auto-jeu, matchs, vitesse
+├── replay_bga.py, evaluate_model.py       Rejeu et évaluation
+├── prix_meeple.py, prix_tuile_blocage.py, stats_tuiles.py, bayes_paysans.py   Analyses
+├── diag_rotation.py, check_spots.py, calibrate_spots.py   Diagnostics
+├── build_xpi.py                Fabrication du paquet de l’extension
+├── updates.json                Mises à jour automatiques de l’extension
 ├── ed1_art_table.json          Table apprise : images 1re édition → types de tuiles
-├── carcassonne_model.pt        Modèle courant (meilleure politique en validation)
-├── carcassonne_model.value.pt  Meilleure tête valeur
-├── carcassonne_model.validation.json   Les 15 parties de validation figées
+├── carcassonne_model.pt        Réseau courant (politique + valeur)
+├── carcassonne_model.validation.json   Les parties de validation figées
 ├── parties/                    Parties exportées (non versionnées)
 ├── requirements.txt
 ├── LICENSE
 └── README.md
 ```
 
----
-
 ## Historique et état actuel
 
-- **Réseau** : tronc commun de 4 couches convolutives (loupes 3×3) sur 24 calques de 25×25 cases + 9 nombres, environ 530 000 poids.
-  - **v27** : tête valeur compacte (≈ 3 000 poids, dropout), gradient de la valeur arrêté avant le tronc, exemples pondérés par l’avancement de la partie, validation figée.
-  - **v28** : politique à **4 rotations** (une carte par rotation, 2 500 notes par position), cibles compactes, contrôle de cohérence des rotations, rotations équivalentes des tuiles symétriques ramenées à celle du moteur.
-- **Moteur** : politique par (case, rotation) dans le MCTS, prior partagé entre les options de meeple d’un même placement, **repêchage** par le réseau des coups écartés par l’heuristique, exclusion « catastrophique » fondée sur le bilan (ce que le coup donne moins ce qu’il rapporte).
-- **Données** : 401 parties rejouées à l’identique, dont des parties en tuiles 1re édition.
-- **Serveur** : v8, mode asynchrone (`/analyze` puis `/result/<job_id>`), `/health`.
+- **3.0.3** : réseau v33 avec tête valeur, entraîné sur 10 000 parties d’auto-jeu (**+69 Elo** contre le réseau v28 de la 3.0.2, 200 parties) ; réponse de l’adversaire ; tuile dessinée dans la bonne orientation.
+- **3.0.2** : première version signée, tout le calcul dans le navigateur, interface français / anglais.
+- **v32** : MCTS classé par visites et prix du meeple ; l’accord avec les joueurs forts passe d’environ 13 % à 28 % en top 1.
+- **v28** : politique à 4 rotations, contrôle de cohérence des rotations.
 
----
+Mesures en arène : doubler le calcul ne rapporte qu’environ +23 Elo (non significatif), le facteur limitant est l’évaluation. Un second cycle d’auto-jeu (réseau v34) n’a pas fait mieux que la v33, qui reste le réseau de référence.
+
+Données : 401 parties humaines rejouées à l’identique, dont des parties en tuiles 1re édition, et plusieurs milliers de parties d’auto-jeu.
 
 ## Limites connues
 
-- **Valeur** : la tête valeur ne prédit pas le vainqueur mieux que « celui qui mène gagne » ; elle est désactivée (`use_value=False`) et le MCTS garde l’évaluation heuristique.
-- **Début de partie** : avec plus de 30 tuiles restantes, les coups raisonnables obtiennent tous environ 53 % et l’ordre tient au hasard des simulations.
-- **Plans à plusieurs coups** : partages, jonctions futures et blocages sont mal vus par des parties d’essai jouées au hasard.
-- **Vitesse** : moteur en Python pur, environ cent fois plus lent qu’un moteur compilé.
-- **Données** : le réseau progresse d’environ un point par lot de parties ajouté ; un vrai saut demanderait des milliers de parties ou de l’auto-apprentissage.
-- **Extension** : identifiant temporaire (`carcassonne-coach@votre-email.com`), à remplacer avant toute publication.
-
----
+- **Début de partie** : avec beaucoup de tuiles restantes, les coups raisonnables sont proches et leur ordre tient en partie au hasard des simulations.
+- **Plans à plusieurs coups** : partages, jonctions futures et blocages restent difficiles à voir au-delà de la réponse de l’adversaire.
+- **Vitesse** : moteur en Python pur, plus lent encore dans le navigateur ; le serveur local va environ deux fois plus vite.
+- **Variantes** : seul le jeu de base à 2 joueurs est pris en charge.
 
 ## Licence
 
 Copyright © 2026 Jérémie (Jadiema) — Éditions Jadiema
 
-Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la **GNU General Public License version 3**, telle que publiée par la Free Software Foundation. Toute version modifiée que vous distribuez doit rester sous la même licence, avec son code source.
+Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU General Public License version 3, telle que publiée par la Free Software Foundation. Toute version modifiée que vous distribuez doit rester sous la même licence, avec son code source.
 
-Ce programme est distribué dans l’espoir qu’il sera utile, mais **sans aucune garantie**, pas même la garantie implicite de qualité marchande ou d’adéquation à un usage particulier. Le texte complet de la licence figure dans le fichier [LICENSE](LICENSE).
-
+Ce programme est distribué dans l’espoir qu’il sera utile, mais sans aucune garantie, pas même la garantie implicite de qualité marchande ou d’adéquation à un usage particulier. Le texte complet de la licence figure dans le fichier `LICENSE`.
