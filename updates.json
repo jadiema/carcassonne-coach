@@ -4,7 +4,8 @@
       "updates": [
         {
           "version": "3.0.3",
-          "update_link": "https://github.com/jadiema/carcassonne-coach/releases/download/v3.0.3/carcassonne-coach.xpi"
+          "update_link": "https://github.com/jadiema/carcassonne-coach/releases/download/v3.0.3/carcassonne-coach.xpi",
+          "update_hash": "sha256:9bdc6fa54ff18da070ca078d7717e987dc2d39719b328e13c6db62fcd24ca2e5"
         }
       ]
     }
