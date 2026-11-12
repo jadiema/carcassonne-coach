@@ -165,6 +165,7 @@ carcassonne-coach/
 ├── pyodide/                    Pyodide 0.26.4 et NumPy
 ├── browser_coach.py            Point d’entrée du coach dans le navigateur
 ├── torch_free.py               Lecture du réseau sans PyTorch
+├── verify_torch_free.py        Vérifie que torch_free.py donne le même résultat que PyTorch
 ├── carcassonne_engine.py       Règles, décompte, génération des coups, MCTS
 ├── neural_evaluator.py         Encodage du plateau, réseau, entraînement
 ├── server.py, start_server.bat Serveur local facultatif (port 5555)
@@ -178,6 +179,8 @@ carcassonne-coach/
 ├── carcassonne_model.pt        Réseau courant (politique + valeur)
 ├── carcassonne_model.validation.json   Les parties de validation figées
 ├── parties/                    Parties exportées (non versionnées)
+├── NOTES-VERIFICATEURS-MOZILLA.txt   Notes et procédure de test pour les vérificateurs Mozilla
+├── CLAUDE.md                   Consignes pour l’assistant de développement (Claude Code)
 ├── requirements.txt
 ├── LICENSE
 └── README.md

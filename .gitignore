@@ -38,3 +38,4 @@ arena/
 *.xpi
 carcassonne_model_v*
 Sauvegarde_coach_carcassonne/
+carcassonne_model.value.pt
