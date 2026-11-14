@@ -64,6 +64,16 @@ class NumpyNeuralEvaluator(N.NeuralEvaluator):
 
 _evaluator = None
 
+# v3.0.4 : analyse réservée aux parties terminées et aux replays (règle de BGA).
+# Le content script inscrit la preuve dans _meta ; sans elle, refus.
+FINISHED_PROOFS = ("replay-url", "replay-mode", "game-end")
+
+
+def is_marked_finished(data) -> bool:
+    meta = data.get("_meta") if isinstance(data, dict) else None
+    return (isinstance(meta, dict) and meta.get("gameFinished") is True
+            and meta.get("finishedProof") in FINISHED_PROOFS)
+
 
 def load(model_path: str = "carcassonne_model.pt", use_value: bool = True) -> str:
     """Charge le réseau une fois pour toutes. Renvoie le mode utilisé.
@@ -81,6 +91,9 @@ def load(model_path: str = "carcassonne_model.pt", use_value: bool = True) -> st
 def analyze(state_json: str, sims: int = 1000, time_limit: float = 10.0, player_idx: int = 0) -> str:
     """Même entrée et même sortie que le serveur (/analyze puis /result)."""
     data = json.loads(state_json)
+    if not is_marked_finished(data):
+        return json.dumps({"status": "error",
+                           "error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."})
     state = E.GameState.from_json(data)
     if not state.current_tile:
         return json.dumps({"status": "error", "error": "Pas de tuile en main détectée"})

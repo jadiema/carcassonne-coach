@@ -28,6 +28,17 @@ def _only_extension():
     if origin and not origin.startswith(_EXT_ORIGINS):
         return jsonify({"error": "origine non autorisée"}), 403
 
+# v3.0.4 : analyse réservée aux parties terminées et aux replays (règle de BGA).
+# Le content script inscrit la preuve dans _meta ; sans elle, refus (interdit par défaut).
+FINISHED_PROOFS = ("replay-url", "replay-mode", "game-end")
+
+
+def is_marked_finished(data) -> bool:
+    meta = data.get("_meta") if isinstance(data, dict) else None
+    return (isinstance(meta, dict) and meta.get("gameFinished") is True
+            and meta.get("finishedProof") in FINISHED_PROOFS)
+
+
 # Stockage des jobs en mémoire
 jobs = {}
 
@@ -75,6 +86,8 @@ def analyze():
     data = request.get_json()
     if not data:
         return jsonify({"error": "JSON invalide"}), 400
+    if not is_marked_finished(data):
+        return jsonify({"error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}), 403
 
     sims = request.args.get("sims", 1000, type=int)
     time_limit = request.args.get("time", 10, type=float)

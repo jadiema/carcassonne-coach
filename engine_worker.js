@@ -30,6 +30,12 @@ async function init() {
 
 self.onmessage = async (event) => {
   const { id, state, sims, time, player } = event.data;
+  // v3.0.4 : refus d'une position non marquée comme terminée (avant même de charger Python)
+  const m = state && state._meta;
+  if (!m || m.gameFinished !== true || !["replay-url", "replay-mode", "game-end"].includes(m.finishedProof)) {
+    self.postMessage({ id, status: "error", error: "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)." });
+    return;
+  }
   try {
     if (!ready) ready = init();
     const mode = await ready;

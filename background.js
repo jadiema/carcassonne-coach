@@ -10,6 +10,15 @@
 
 const SERVER_URL = "http://127.0.0.1:5555";
 
+// v3.0.4 : position acceptée seulement si le content script a prouvé que la
+// partie est terminée (replay ou état gameEnd de BGA). Interdit par défaut.
+const FINISHED_PROOFS = ["replay-url", "replay-mode", "game-end"];
+function isMarkedFinished(state) {
+  const m = state && state._meta;
+  return !!m && m.gameFinished === true && FINISHED_PROOFS.includes(m.finishedProof);
+}
+const NOT_FINISHED = "Analyse refusée : la position n’est pas marquée comme issue d’une partie terminée ou d’un replay.";
+
 let worker = null;
 const browserJobs = {};
 
@@ -60,6 +69,10 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // Lancer une analyse (retour immédiat avec job_id)
   if (message.type === "start-analysis") {
+    if (!isMarkedFinished(message.state)) {
+      sendResponse({ ok: false, error: NOT_FINISHED });
+      return;
+    }
     serverHealth().then(up => {
       if (up) {
         fetch(SERVER_URL + "/analyze?sims=" + message.sims + "&time=" + message.time + "&player=" + message.player, {

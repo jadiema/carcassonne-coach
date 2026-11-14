@@ -614,43 +614,93 @@
   // CADRE D'USAGE — analyse réservée aux parties terminées et aux replays
   // ============================================================
   // Conseiller pendant une partie en cours serait contraire aux règles de
-  // Board Game Arena. Le coach est un outil d'étude : il n'analyse qu'une
-  // partie terminée (« Fin de la partie » dans le journal) ou un replay.
-  const REPLAY_URL = /\/tablereplay\b|\/archive\/replay\/|[?&]replay=|\/replay\b/i;
+  // Board Game Arena. Le coach est un outil d'étude.
+  //
+  // v3.0.4 — INTERDIT PAR DÉFAUT. L'analyse (et l'export de la position)
+  // n'est autorisée que si l'on PROUVE que la partie est terminée :
+  //   • « replay-url »  : chemin de la page (ou de la page parente) en
+  //                       /archive/replay/… ou /tablereplay ;
+  //   • « replay-mode » : variable g_archive_mode de BGA à vrai ;
+  //   • « game-end »    : état du jeu BGA = gameEnd (gameui.gamedatas.gamestate).
+  // Tout le reste (information absente, page inaccessible, doute) : bloqué.
+  // Ne sont PLUS des preuves (contournables pendant une partie en cours) :
+  //   • le texte « Fin de la partie / End of game » dans #logs (le chat de la
+  //     table s'affiche dans ce journal : n'importe qui peut l'écrire) ;
+  //   • « replay » n'importe où dans l'adresse (paramètre ?replay=… ajoutable) ;
+  //   • la présence d'un élément #archivecontrol dans le DOM.
+  // La position envoyée au moteur porte la preuve (_meta.gameFinished) ;
+  // background.js, le worker et le serveur refusent une position sans elle.
+  const REPLAY_PATH = /^\/(archive\/replay\/|tablereplay\/?$)/i;
+  const FINISHED_PROOFS = ["replay-url", "replay-mode", "game-end"];
 
-  function isReplay() {
-    // 1. adresse de la page, ou de la page parente si le plateau est dans un cadre
-    const urls = [location.href];
-    try { urls.push(window.top.location.href); } catch (e) {}
-    if (urls.some(u => u && REPLAY_URL.test(u))) return true;
-    // 2. variable de BGA en mode replay (accessible depuis l'extension sous Firefox)
+  function pageGlobals() {
+    // Variables de la page BGA (Firefox : wrappedJSObject). Absent → aucune preuve.
+    try { return window.wrappedJSObject || null; } catch (e) { return null; }
+  }
+
+  function bgaGameStateName() {
+    const page = pageGlobals();
+    if (!page) return null;
     try {
-      const page = window.wrappedJSObject || window;
-      if (page.g_archive_mode) return true;
-    } catch (e) {}
-    // 3. commandes de replay présentes dans la page (ou la page parente)
-    const docs = [document];
-    try { if (window.top.document) docs.push(window.top.document); } catch (e) {}
-    return docs.some(d => d.querySelector("#archivecontrol"));
+      const gs = page.gameui && page.gameui.gamedatas && page.gameui.gamedatas.gamestate;
+      return gs && typeof gs.name === "string" ? gs.name : null;
+    } catch (e) { return null; }
+  }
+
+  function finishedProof() {
+    // 1. Replay d'après l'adresse (chemin seulement, jamais les paramètres)
+    const paths = [location.pathname];
+    try { paths.push(window.top.location.pathname); } catch (e) {}
+    if (paths.some(p => typeof p === "string" && REPLAY_PATH.test(p))) return "replay-url";
+    // 2. Mode replay déclaré par BGA
+    const page = pageGlobals();
+    if (page) {
+      try {
+        const a = page.g_archive_mode;
+        if (a === true || a === 1 || a === "1") return "replay-mode";
+      } catch (e) {}
+    }
+    // 3. Fin de partie dans les données du jeu
+    if (bgaGameStateName() === "gameEnd") return "game-end";
+    return null;                                   // pas de preuve : bloqué
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
   function analysisAllowed() {
-    if (isReplay()) return { ok: true };
-    const logs = document.getElementById("logs");
-    if (logs && /Fin de la partie|End of game/.test(logs.textContent)) {
-      return { ok: true };
-    }
+    const proof = finishedProof();
+    if (proof) return { ok: true, proof };
     let top = "";
     try { top = window.top.location.pathname; } catch (e) { top = "(inaccessible)"; }
     return {
       ok: false,
       reason: t("blocked") +
-              `<div style="margin-top:8px;font-size:10px;color:#7f849c">diagnostic : ${location.pathname}` +
-              ` · parent ${top}</div>`,
+              `<div style="margin-top:8px;font-size:10px;color:#7f849c">diagnostic : ${escHtml(location.pathname)}` +
+              ` · parent ${escHtml(top)} · état ${escHtml(bgaGameStateName() || "inconnu")}</div>`,
     };
   }
 
+  // Extrait la position SEULEMENT si la partie est prouvée terminée, et y
+  // inscrit la preuve. Renvoie { error } sinon. Point de passage unique pour
+  // l'analyse, la copie et la sauvegarde du JSON.
+  function extractFinishedState() {
+    const policy = analysisAllowed();
+    if (!policy.ok) return { error: policy.reason, blocked: true };
+    const state = extractGameState();
+    if (state.error) return state;
+    state._meta.gameFinished = true;
+    state._meta.finishedProof = policy.proof;
+    return state;
+  }
+
   async function requestAnalysis(state, sims = 1000, timeSec = 10, playerIdx = 0) {
+    // 0. Dernier contrôle juste avant de lancer le calcul
+    const policy = analysisAllowed();
+    if (!policy.ok) throw new Error(policy.reason);
+    state._meta = { ...(state._meta || {}), gameFinished: true, finishedProof: policy.proof };
+
     // 1. Lancer l'analyse (retour immédiat avec job_id)
     const startResp = await browser.runtime.sendMessage({
       type: "start-analysis",
@@ -928,7 +978,7 @@
     resultsDiv.id = "carc-coach-results";
 
     // Textarea caché
-    const json = JSON.stringify(state, null, 2);
+    const json = "";          // rempli au clic sur 📋 JSON, après contrôle
     const textarea = document.createElement("textarea");
     textarea.className = "carc-json";
     textarea.value = json;
@@ -952,8 +1002,8 @@
       analyzeBtn.disabled = true;
       analyzeBtn.textContent = t("connecting");
 
-      // Ré-extraire l'état frais à chaque analyse
-      const freshState = extractGameState();
+      // Ré-extraire l'état frais à chaque analyse (refusé sans preuve de fin)
+      const freshState = extractFinishedState();
       if (freshState.error) {
         resultsDiv.innerHTML = `<div class="carc-error">${freshState.error}</div>`;
         analyzeBtn.disabled = false;
@@ -1045,6 +1095,16 @@
     copyBtn.className = "carc-btn carc-btn-secondary";
     copyBtn.textContent = "📋 JSON";
     copyBtn.addEventListener("click", () => {
+      if (textarea.style.display === "none") {
+        // Export JSON : même contrôle que l'analyse, position relue à l'instant
+        const fresh = extractFinishedState();
+        if (fresh.error) {
+          textarea.value = "";
+          resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">⏸️ ${fresh.error}</div>`;
+          return;
+        }
+        textarea.value = JSON.stringify(fresh, null, 2);
+      }
       textarea.style.display = textarea.style.display === "none" ? "block" : "none";
       if (textarea.style.display === "block") {
         textarea.select();
@@ -1059,6 +1119,11 @@
     saveBtn.textContent = "💾";
     saveBtn.title = t("saveTitle");
     saveBtn.addEventListener("click", () => {
+      const policy = analysisAllowed();
+      if (!policy.ok) {
+        resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">⏸️ ${policy.reason}</div>`;
+        return;
+      }
       if (saveGameJSON()) {
         saveBtn.textContent = "✅";
         setTimeout(() => { saveBtn.textContent = "💾"; }, 2000);
@@ -1344,7 +1409,7 @@
     fab.textContent = "🏰";
     fab.addEventListener("click", () => {
       try {
-        const state = extractGameState();
+        const state = extractFinishedState();   // partie en cours : message de blocage
         if (state.error) {
           showError(state.error);
         } else {
@@ -1369,7 +1434,7 @@
   }
 
   function saveGameJSON() {
-    const state = extractGameState();
+    const state = extractFinishedState();      // refuse sans preuve de fin de partie
     if (state.error) return false;
     const table = currentTableId();
     if (table) state._meta.tableId = table;
@@ -1389,15 +1454,21 @@
     return true;
   }
 
-  // Export automatique : dès que le journal contient « Fin de la partie »,
+  // Export automatique : dès que la fin de partie est prouvée (voir finishedProof),
   // le JSON complet est téléchargé une seule fois par table.
   function watchGameEnd() {
     if (window.__carcCoachWatching) return;
     window.__carcCoachWatching = true;
     const KEY = "carcCoachExportedTables";
     const timer = setInterval(() => {
-      const logs = document.getElementById("logs");
-      if (!logs || !/Fin de la partie|End of game/.test(logs.textContent)) return;
+      // Fin prouvée par l'état du jeu (gameEnd) ; dans un replay (déjà
+      // autorisé), on attend en plus la fin du journal pour exporter la partie complète.
+      const proof = finishedProof();
+      if (!proof) return;
+      if (proof !== "game-end") {
+        const logs = document.getElementById("logs");
+        if (!logs || !/Fin de la partie|End of game/.test(logs.textContent)) return;
+      }
       clearInterval(timer);
       const table = currentTableId() || "?";
       let done = [];
