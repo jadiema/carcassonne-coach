@@ -25,3 +25,17 @@ How to test: create a free Board Game Arena account, open the replay of any fini
 Carcassonne game (game page > "Replay"), click the 🏰 button at the bottom right,
 then "Analyser". Recommended moves are highlighted on the board after 15 seconds.
 During a game in progress, analysis is intentionally blocked.
+
+
+Version 3.0.4 - Analysis restricted to finished games
+
+The extension only analyses finished games and replays, in line with Board Game Arena's
+rules. Analysis is denied by default and allowed only on positive proof that the game is
+over: a replay page path (/archive/replay/ or /tablereplay), BGA's archive mode flag, or the
+game state "gameEnd". If none of these can be read, analysis is blocked.
+The check is applied at every entry point (analysis button, JSON copy and save, automatic
+export) and again by the engine itself (background script, worker and optional local
+server), which refuse any position not marked as finished.
+
+How to test: open a game in progress on boardgamearena.com, as a player or a spectator:
+the panel shows that analysis is unavailable. Open a replay of a finished game: analysis works.
