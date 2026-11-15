@@ -34,6 +34,8 @@ C’est tout : rien d’autre à installer. L’extension est signée par Mozill
 2. Cliquer sur le bouton 🏰 ajouté par l’extension, choisir son joueur et le temps d’analyse.
 3. Lancer l’analyse : les meilleurs coups apparaissent sur le plateau. La tuile conseillée est dessinée dans sa bonne orientation, avec le meeple à sa place.
 
+L’onglet **Probabilités** reprend les calculs des chapitres 1 à 3 du livre : état du sac, familles de tuiles (arrêts de route, lignes, villes en coin, vrais virages, capuchons, courbes) avec la chance au prochain tirage et sur vos prochains tirages, entropie en bits, et trous du plateau autour de vos structures, y compris la fusion avec une ville adverse. Il suit la position affichée du replay, en avant comme en arrière.
+
 L’interface existe en français et en anglais : cliquer sur le drapeau du panneau pour changer de langue (le choix est mémorisé).
 
 ## Fonctionnement
@@ -123,9 +125,18 @@ Fait jouer deux configurations l’une contre l’autre et donne l’écart en E
 python evaluate_model.py parties
 ```
 
-Rejoue les parties de validation et mesure, sur chaque position, si le coup réellement joué par le joueur fort figure dans le top 1 / top 3 de chaque méthode.
+Rejoue les parties de validation et mesure, sur chaque position, si le coup réellement joué par le joueur fort figure dans le top 1 / top 3 de chaque méthode. Résultats du réseau v33 (989 positions des 15 parties de validation) :
 
-`bench_mcts.py` mesure la vitesse de la recherche.
+| Méthode | Top 1 | Top 3 |
+|---|---|---|
+| Hasard parmi les coups légaux | 6,4 % | 19,0 % |
+| Heuristique du moteur | 31,2 % | 48,6 % |
+| Réseau, tête valeur | 20,3 % | 37,8 % |
+| Réseau, politique | 36,4 % | 62,5 % |
+
+La liste de validation (`carcassonne_model.validation.json`) ne contient que des numéros de table ; ces parties ne doivent jamais servir à l’entraînement.
+
+`bench_mcts.py` mesure si la recherche MCTS retrouve le coup des joueurs forts (top 1 / top 3, coup complet).
 
 ## Scripts d’analyse
 
@@ -152,6 +163,10 @@ python build_xpi.py
 
 Produit `carcassonne-coach-<version>.xpi`, à faire signer par Mozilla. **Ne pas utiliser `web-ext build`**, qui omet les fichiers `.zip` (dont `pyodide/python_stdlib.zip`, indispensable).
 
+Avant toute publication, `python verifier_pseudos.py` vérifie qu’aucun pseudo de joueur ne figure dans les fichiers suivis ni dans l’historique. Il lit les pseudos dans `parties/` au moment où il tourne et n’en contient aucun.
+
+Tests : `node --test tests/probabilites.test.js` (calculs de l’onglet Probabilités) et `python tests/test_holes.py` (trous du plateau).
+
 ## Organisation des fichiers
 
 ```
@@ -161,6 +176,7 @@ carcassonne-coach/
 ├── content-style.css
 ├── background.js
 ├── engine_worker.js            Moteur dans le navigateur (Pyodide)
+├── probabilites.js            Calculs de l’onglet Probabilités
 ├── popup.html, popup.js
 ├── images/                     Icônes de l’extension
 ├── pyodide/                    Pyodide 0.26.4 et NumPy
@@ -170,12 +186,14 @@ carcassonne-coach/
 ├── carcassonne_engine.py       Règles, décompte, génération des coups, MCTS
 ├── neural_evaluator.py         Encodage du plateau, réseau, entraînement
 ├── server.py, start_server.bat Serveur local facultatif (port 5555)
-├── selfplay.py, arena.py, bench_mcts.py   Auto-jeu, matchs, vitesse
+├── selfplay.py, arena.py, bench_mcts.py   Auto-jeu, matchs, banc du MCTS
 ├── replay_bga.py, evaluate_model.py       Rejeu et évaluation
 ├── prix_meeple.py, prix_tuile_blocage.py, stats_tuiles.py,
 │   virage_premier_tour.py, bayes_paysans.py                Analyses
 ├── diag_rotation.py, check_spots.py, calibrate_spots.py   Diagnostics
 ├── build_xpi.py                Fabrication du paquet de l’extension
+├── verifier_pseudos.py         Contrôle des pseudos avant publication
+├── tests/                      Tests de l’onglet Probabilités et des trous du plateau
 ├── updates.json                Mises à jour automatiques de l’extension
 ├── ed1_art_table.json          Table apprise : images 1re édition → types de tuiles
 ├── carcassonne_model.pt        Réseau courant (politique + valeur)
@@ -190,9 +208,10 @@ carcassonne-coach/
 
 ## Historique et état actuel
 
+- **3.1.0** : onglet Probabilités (chapitres 1 à 3 du livre : familles, entropie, trous du plateau), en-tête synchronisé avec le replay.
 - **3.0.4** : analyse strictement réservée aux parties terminées et aux replays, contrôlée aussi par le moteur ; réseau v33 avec tête valeur, entraîné sur 10 000 parties d’auto-jeu (**+69 Elo** contre le réseau v28 de la 3.0.2, 200 parties) ; réponse de l’adversaire ; tuile dessinée dans la bonne orientation.
 - **3.0.2** : première version signée, tout le calcul dans le navigateur, interface français / anglais (retirée au profit de la 3.0.4).
-- **v32** : MCTS classé par visites et prix du meeple ; l’accord avec les joueurs forts passe d’environ 13 % à 28 % en top 1.
+- **v32** : MCTS classé par visites et prix du meeple ; l’accord avec les joueurs forts passe d’environ 13 % à 25 % en top 1.
 - **v28** : politique à 4 rotations, contrôle de cohérence des rotations.
 
 Mesures en arène : doubler le calcul ne rapporte qu’environ +23 Elo (non significatif), le facteur limitant est l’évaluation. Un second cycle d’auto-jeu (réseau v34) n’a pas fait mieux que la v33, qui reste le réseau de référence.
