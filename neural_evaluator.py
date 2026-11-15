@@ -23,6 +23,29 @@ import os
 import sys
 from pathlib import Path
 
+
+# Liste de validation SANS PSEUDOS : une partie y est désignée par son numéro
+# de table BGA (fin du nom de fichier : …_t72_927401317.json, ou …(1).json pour
+# un second téléchargement), jamais par le nom du fichier, qui contient les
+# pseudos des joueurs. Sans numéro de table : empreinte du nom de fichier.
+_TABLE_RE = None
+
+
+def game_key(filename: str) -> str:
+    global _TABLE_RE
+    import re, hashlib
+    if _TABLE_RE is None:
+        _TABLE_RE = re.compile(r"_(\d{6,})(?:\s*\(\d+\))?\.json$")
+    name = Path(filename).name
+    m = _TABLE_RE.search(name)
+    return m.group(1) if m else "h:" + hashlib.sha1(name.encode("utf-8")).hexdigest()[:12]
+
+
+def load_validation_keys(path) -> set:
+    """Clés des parties de validation. Accepte l'ancien format (noms de fichiers)."""
+    with open(path, encoding="utf-8") as f:
+        return {game_key(x) if str(x).endswith(".json") else str(x) for x in json.load(f)}
+
 # ============================================================
 # ENCODAGE DU PLATEAU
 # ============================================================
@@ -1198,7 +1221,8 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     val_file = Path(model_path).with_suffix(".validation.json")
     if keep_split and val_file.exists():
         try:
-            kept = set(json.load(open(val_file, encoding="utf-8"))) & set(games)
+            keys = load_validation_keys(val_file)
+            kept = {g for g in games if game_key(g) in keys}
             if len(kept) >= 5:
                 val_games = kept
                 print(f"  Validation figée : {len(kept)} parties reprises de {val_file.name}")
@@ -1217,7 +1241,7 @@ def train(data_dir: str, model_path: str = "carcassonne_model.pt",
     # liste des parties de validation, pour evaluate_model.py
     try:
         with open(Path(model_path).with_suffix(".validation.json"), "w", encoding="utf-8") as f:
-            json.dump(sorted(val_games), f, ensure_ascii=False, indent=1)
+            json.dump(sorted({game_key(g) for g in val_games}), f, ensure_ascii=False, indent=1)
     except OSError:
         pass
     # Choix du meilleur modèle : tant qu'il y a moins de 5 parties rejouées en

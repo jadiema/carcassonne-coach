@@ -29,7 +29,7 @@ async function init() {
 }
 
 self.onmessage = async (event) => {
-  const { id, state, sims, time, player } = event.data;
+  const { id, kind, state, sims, time, player, bag } = event.data;
   // v3.0.4 : refus d'une position non marquée comme terminée (avant même de charger Python)
   const m = state && state._meta;
   if (!m || m.gameFinished !== true || !["replay-url", "replay-mode", "game-end"].includes(m.finishedProof)) {
@@ -39,9 +39,15 @@ self.onmessage = async (event) => {
   try {
     if (!ready) ready = init();
     const mode = await ready;
+    if (kind === "holes") {
+      // Onglet « Probabilités » : trous du plateau (légalité du moteur, sans MCTS)
+      const out = JSON.parse(coach.holes_json(JSON.stringify(state), player, JSON.stringify(bag || {})));
+      self.postMessage({ id, kind, ...out });
+      return;
+    }
     const out = JSON.parse(coach.analyze(JSON.stringify(state), sims, time, player));
     self.postMessage({ id, mode, ...out });
   } catch (err) {
-    self.postMessage({ id, status: "error", error: "Moteur du navigateur : " + (err && err.message ? err.message : String(err)) });
+    self.postMessage({ id, kind, status: "error", error: "Moteur du navigateur : " + (err && err.message ? err.message : String(err)) });
   }
 };

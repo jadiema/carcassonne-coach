@@ -1,0 +1,186 @@
+"""
+🔒 carcassonne-coach — aucun pseudo de joueur dans le dépôt
+==========================================================
+À lancer juste avant de rendre le dépôt public :
+
+    git fetch --tags                 # examiner aussi les étiquettes créées sur GitHub
+    python verifier_pseudos.py
+
+Les pseudos sont lus AU MOMENT DE L'EXÉCUTION dans les parties de parties/
+(dossier ignoré par git) : ce fichier n'en contient aucun. Sont exclus :
+  - l'auteur du dépôt (git config user.name) et les noms passés par --exclure ;
+  - les noms d'auto-jeu : ceux qui n'apparaissent que dans les parties
+    d'auto-jeu (sous-dossiers selfplay*, fichiers sp_*.json).
+
+Recherche en sous-chaîne, sans tenir compte de la casse, dans :
+  1. les fichiers suivis (et les nouveaux fichiers non ignorés, qui seraient commités) ;
+  2. tout l'historique : contenus et chemins de fichiers de tous les commits
+     de toutes les branches et étiquettes, messages de commits et d'étiquettes.
+
+Affiche le fichier, le commit et le pseudo trouvés. Code de sortie : 0 si rien
+n'est trouvé, 1 s'il y a au moins un pseudo, 2 si la vérification est impossible
+(aucun pseudo lu dans parties/).
+"""
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+TAILLE_MAX = 20_000_000          # au-delà (modèles, archives), le fichier n'est pas lu
+
+
+def git(*args, binary=False, stdin=None):
+    r = subprocess.run(["git", *args], cwd=ROOT, input=stdin, capture_output=True)
+    if r.returncode != 0:
+        sys.exit(f"❌ git {' '.join(args)} : {r.stderr.decode('utf-8', 'replace').strip()}")
+    return r.stdout if binary else r.stdout.decode("utf-8", "replace")
+
+
+def is_selfplay(path: Path, parties: Path) -> bool:
+    rel = path.relative_to(parties).parts
+    return path.name.startswith("sp_") or any(p.lower().startswith("selfplay") for p in rel[:-1])
+
+
+def lire_pseudos(parties: Path, exclus: set) -> tuple:
+    humains, autojeu, lus = set(), set(), 0
+    for f in parties.rglob("*.json"):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        noms = {str(p.get("name", "")).strip() for p in data.get("players", []) if isinstance(p, dict)}
+        noms.discard("")
+        (autojeu if is_selfplay(f, parties) else humains).update(noms)
+        lus += 1
+    pseudos = {n for n in humains if n.lower() not in exclus}
+    return pseudos, lus, len(autojeu - humains)
+
+
+def est_binaire(b: bytes) -> bool:
+    return b"\0" in b[:8192]
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Vérifie qu'aucun pseudo de joueur n'est dans le dépôt ni son historique.")
+    ap.add_argument("--parties", default=str(ROOT / "parties"), help="dossier des parties (défaut : parties/)")
+    ap.add_argument("--exclure", action="append", default=[], help="nom à ne pas chercher (répétable)")
+    ap.add_argument("--min", type=int, default=4,
+                    help="longueur minimale d'un pseudo cherché (défaut 4 : les noms plus courts "
+                         "donneraient des faux positifs partout ; --min 1 pour tout chercher)")
+    a = ap.parse_args()
+
+    auteur = git("config", "user.name").strip()
+    exclus = {x.lower() for x in a.exclure + ([auteur] if auteur else [])}
+    pseudos, lus, n_autojeu = lire_pseudos(Path(a.parties), exclus)
+    courts = {p for p in pseudos if len(p) < a.min}
+    pseudos -= courts
+    print(f"Parties lues : {lus} · pseudos cherchés : {len(pseudos)} "
+          f"(exclus : auteur du dépôt, {n_autojeu} nom(s) d'auto-jeu"
+          + (f", {len(courts)} pseudo(s) de moins de {a.min} caractères" if courts else "") + ")")
+    if not pseudos:
+        print("❌ Aucun pseudo lu : vérification impossible (dossier parties/ vide ou absent ?)")
+        return 2
+
+    motif = re.compile("|".join(re.escape(p) for p in sorted(pseudos, key=len, reverse=True)), re.IGNORECASE)
+    canon = {p.lower(): p for p in pseudos}
+
+    def trouves(texte: str) -> set:
+        return {canon.get(m.group(0).lower(), m.group(0)) for m in motif.finditer(texte)}
+
+    resultats = []      # (où, fichier, commit, pseudo)
+
+    # 1. Fichiers actuels qui seraient commités
+    fichiers = [f for f in git("ls-files", "-co", "--exclude-standard", "-z").split("\0") if f]
+    for f in fichiers:
+        p = ROOT / f
+        for n in trouves(f):
+            resultats.append(("actuel", f, "(dossier de travail)", n))
+        try:
+            if not p.is_file() or p.stat().st_size > TAILLE_MAX:
+                continue
+            b = p.read_bytes()
+        except OSError:
+            continue
+        if not est_binaire(b):
+            for n in trouves(b.decode("utf-8", "replace")):
+                resultats.append(("actuel", f, "(dossier de travail)", n))
+
+    # 2. Historique : tous les objets de toutes les références (branches, étiquettes, distantes)
+    objets = git("rev-list", "--all", "--objects").splitlines()
+    chemins = {}
+    for ligne in objets:
+        sha, _, chemin = ligne.partition(" ")
+        if chemin:
+            chemins.setdefault(sha, set()).add(chemin)
+    # chemins de fichiers
+    for sha, cs in chemins.items():
+        for c in cs:
+            for n in trouves(c):
+                resultats.append(("historique", c, None, n))
+    # contenus : lecture groupée des objets « blob »
+    info = git("cat-file", "--batch-check=%(objectname) %(objecttype) %(objectsize)",
+               stdin="\n".join(chemins).encode()).splitlines()
+    blobs = [l.split()[0] for l in info if len(l.split()) == 3 and l.split()[1] == "blob"
+             and int(l.split()[2]) <= TAILLE_MAX]
+    if blobs:
+        brut = git("cat-file", "--batch", binary=True, stdin="\n".join(blobs).encode())
+        i = 0
+        while i < len(brut):
+            fin = brut.index(b"\n", i)
+            sha, _, taille = brut[i:fin].decode().split()
+            debut = fin + 1
+            contenu = brut[debut:debut + int(taille)]
+            i = debut + int(taille) + 1
+            if est_binaire(contenu):
+                continue
+            ns = trouves(contenu.decode("utf-8", "replace"))
+            for c in sorted(chemins.get(sha, ())):
+                for n in ns:
+                    resultats.append(("historique", c, sha, n))
+    # messages de commits et d'étiquettes
+    for bloc in git("log", "--all", "--format=%h%x00%B%x01").split("\x01"):
+        if "\0" in bloc:
+            h, msg = bloc.strip("\n").split("\0", 1)
+            for n in trouves(msg):
+                resultats.append(("historique", "(message de commit)", h, n))
+    for bloc in git("for-each-ref", "refs/tags", "--format=%(refname:short)%00%(contents)%01").split("\x01"):
+        if "\0" in bloc:
+            t, msg = bloc.strip("\n").split("\0", 1)
+            for n in trouves(t + "\n" + msg):
+                resultats.append(("historique", f"(étiquette {t})", t, n))
+
+    # Commits qui contiennent chaque contenu fautif (ceux qui l'ont ajouté ou retiré)
+    commits_de = {}
+    def commits(sha):
+        if sha not in commits_de:
+            commits_de[sha] = git("log", "--all", "--format=%h", f"--find-object={sha}").split() or ["?"]
+        return commits_de[sha]
+
+    vus, lignes = set(), []
+    for ou, fichier, ref, n in resultats:
+        if ou == "historique" and ref is None:
+            ref = "(chemin de fichier)"
+        elif ou == "historique" and re.fullmatch(r"[0-9a-f]{40}", ref or ""):
+            ref = ", ".join(commits(ref))
+        cle = (ou, fichier, ref, n)
+        if cle not in vus:
+            vus.add(cle)
+            lignes.append(cle)
+
+    if not lignes:
+        print("✅ Aucun pseudo trouvé dans les fichiers suivis ni dans l'historique.")
+        return 0
+    lignes.sort()
+    print(f"\n❌ {len(lignes)} occurrence(s) :")
+    for ou, fichier, ref, n in lignes:
+        print(f"  [{ou}] {fichier} · commit {ref} · pseudo « {n} »")
+    print("\nFichiers actuels : à corriger avant le commit. Historique : à réécrire "
+          "(git filter-repo) avant de rendre le dépôt public.")
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

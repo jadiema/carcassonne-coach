@@ -9,7 +9,7 @@ intégré au navigateur ne démarre plus (« Program terminated with exit(1) »)
 """
 import json, os, sys, zipfile
 
-FILES = ["manifest.json", "background.js", "content-script.js", "content-style.css",
+FILES = ["manifest.json", "background.js", "probabilites.js", "content-script.js", "content-style.css",
          "popup.html", "popup.js", "engine_worker.js", "LICENSE",
          "carcassonne_engine.py", "neural_evaluator.py", "torch_free.py", "browser_coach.py",
          "carcassonne_model.pt"]

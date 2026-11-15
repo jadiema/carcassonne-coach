@@ -81,6 +81,49 @@
       noMeeple: "sans meeple",
       clickToSee: "{n} sim. · cliquez pour voir sur le plateau",
       langTitle: "Switch to English",
+      // Onglet « Probabilités » (livre, chapitres 1 à 3)
+      tabAnalysis: "🔍 Analyse",
+      tabProba: "🎲 Probabilités",
+      pvLabel: "Point de vue : <strong>{name}</strong>",
+      pvSwitch: "⇄ Voir pour {name}",
+      bagLine: "Sac : <strong>{n}</strong> tuiles",
+      handKnown: "tuile en main : <strong>{l}</strong> (hors du sac)",
+      handUnknown: "pas de tuile en main",
+      nextDraw: "prochain tirage du sac : <strong>{name}</strong>",
+      nextDrawUnknown: "prochain tirage : joueur inconnu (supposé {name})",
+      kLabel: "Mes prochains tirages (k) :",
+      kCapped: "plafonné à {k} : il vous reste {d} tirage(s)",
+      colFamily: "Famille",
+      colQuestion: "Question",
+      colNext: "Prochain tirage",
+      colK: "{k} tirages",
+      colH: "Entropie",
+      exactType: "Type exact",
+      exactQ: "Quelle tuile exactement ?",
+      typesLeft: "{m} types",
+      refHint: "Cliquez sur une famille pour en faire la référence.",
+      bagEmpty: "Le sac est vide : plus aucun tirage.",
+      unknownTiles: "⚠️ {n} tuile(s) du plateau non reconnue(s) (tuiles 1re édition ?) : chiffres approximatifs.",
+      bagError: "Sac incohérent : {m}",
+      holesTitle: "Trous du plateau",
+      holesTip: "Cases vides qui touchent une structure ouverte du joueur (ville, route, pré où il a un partisan) " +
+                "ou une ville adverse qu’il peut rejoindre : la case touche aussi une de ses villes occupées et une " +
+                "tuile du sac peut les relier. n = tuiles du sac qui peuvent y être posées " +
+                "légalement (au moins une rotation) ; pour une fusion, n = tuiles qui relient réellement les deux " +
+                "villes. L’adversaire peut aussi occuper ou bloquer la case : " +
+                "le calcul ne le prend pas en compte.",
+      holesLoading: "⏳ Calcul des trous (moteur)…",
+      holesNone: "Aucune case vide ne touche une structure ouverte de ce joueur.",
+      holesError: "Trous du plateau indisponibles : {m}",
+      colCell: "Case",
+      colTouches: "Touche",
+      kind_city: "ma ville", kind_road: "ma route", kind_field: "mon pré", kind_opp_city: "fusion avec la ville adverse",
+      cellTitle: "Position par rapport à la tuile de départ",
+      fitsTitle: "Tuiles qui conviennent : {l}",
+      deadHole: "aucune tuile ne convient",
+      mergeOthers: "{m} autres tuiles peuvent se poser ici sans fusionner : elles fermeraient cette possibilité.",
+      mergeOther1: "1 autre tuile peut se poser ici sans fusionner : elle fermerait cette possibilité.",
+      mergeFitsTitle: "Tuiles qui réalisent la fusion : {l}",
     },
     en: {
       notBga: "This page is not a Carcassonne game on BGA.",
@@ -143,6 +186,48 @@
       noMeeple: "no meeple",
       clickToSee: "{n} sim. · click to see it on the board",
       langTitle: "Passer en français",
+      tabAnalysis: "🔍 Analysis",
+      tabProba: "🎲 Probabilities",
+      pvLabel: "Point of view: <strong>{name}</strong>",
+      pvSwitch: "⇄ View for {name}",
+      bagLine: "Bag: <strong>{n}</strong> tiles",
+      handKnown: "tile in hand: <strong>{l}</strong> (not in the bag)",
+      handUnknown: "no tile in hand",
+      nextDraw: "next draw from the bag: <strong>{name}</strong>",
+      nextDrawUnknown: "next draw: unknown player (assumed {name})",
+      kLabel: "My next draws (k):",
+      kCapped: "capped at {k}: you have {d} draw(s) left",
+      colFamily: "Family",
+      colQuestion: "Question",
+      colNext: "Next draw",
+      colK: "{k} draws",
+      colH: "Entropy",
+      exactType: "Exact type",
+      exactQ: "Which tile exactly?",
+      typesLeft: "{m} types",
+      refHint: "Click a family to make it the reference.",
+      bagEmpty: "The bag is empty: no more draws.",
+      unknownTiles: "⚠️ {n} board tile(s) not recognised (1st edition tiles?): figures are approximate.",
+      bagError: "Inconsistent bag: {m}",
+      holesTitle: "Holes on the board",
+      holesTip: "Empty squares next to an open structure of the player (city, road, field where they have a " +
+                "follower) or an opponent's city they can join: the square also touches one of their occupied cities " +
+                "and a tile in the bag can connect them. n = tiles in the bag that can legally go there " +
+                "(at least one rotation); for a merge, n = tiles that actually connect the two cities. " +
+                "The opponent may also take or block the square: the calculation " +
+                "does not take this into account.",
+      holesLoading: "⏳ Computing holes (engine)…",
+      holesNone: "No empty square touches an open structure of this player.",
+      holesError: "Board holes unavailable: {m}",
+      colCell: "Square",
+      colTouches: "Touches",
+      kind_city: "my city", kind_road: "my road", kind_field: "my field", kind_opp_city: "merge with opponent's city",
+      cellTitle: "Position relative to the starting tile",
+      fitsTitle: "Tiles that fit: {l}",
+      deadHole: "no tile fits",
+      mergeOthers: "{m} other tiles can be placed here without merging: they would close this possibility.",
+      mergeOther1: "1 other tile can be placed here without merging: it would close this possibility.",
+      mergeFitsTitle: "Tiles that make the merge: {l}",
     },
   };
   function t(key, vars = {}) {
@@ -324,7 +409,7 @@
   // ============================================================
   // EXTRACTION ENGINE
   // ============================================================
-  function extractGameState() {
+  function extractGameState(opts = {}) {
     const wrapper = document.querySelector("#leftright_page_wrapper");
     if (!wrapper || wrapper.className !== "bgagame-carcassonne") {
       return { error: t("notBga") };
@@ -451,7 +536,7 @@
       if (!freeSet.has(key)) { freeSet.add(key); freePlacesUnique.push(p); }
     });
 
-    console.log("🏰 Coach: " + freePlacesUnique.length + " emplacements libres, " + boardTiles.length + " tuiles posées");
+    if (!opts.quiet) console.log("🏰 Coach: " + freePlacesUnique.length + " emplacements libres, " + boardTiles.length + " tuiles posées");
 
     // Détecter à qui c'est le tour
     let activePlayerId = null;
@@ -685,10 +770,10 @@
   // Extrait la position SEULEMENT si la partie est prouvée terminée, et y
   // inscrit la preuve. Renvoie { error } sinon. Point de passage unique pour
   // l'analyse, la copie et la sauvegarde du JSON.
-  function extractFinishedState() {
+  function extractFinishedState(opts = {}) {
     const policy = analysisAllowed();
     if (!policy.ok) return { error: policy.reason, blocked: true };
-    const state = extractGameState();
+    const state = extractGameState(opts);
     if (state.error) return state;
     state._meta.gameFinished = true;
     state._meta.finishedProof = policy.proof;
@@ -785,6 +870,297 @@
     body.prepend(buildDisclaimer());
   }
 
+  // ============================================================
+  // ONGLET « PROBABILITÉS » (livre, chapitres 1 à 3)
+  // ============================================================
+  // Lit l'état UNIQUEMENT par extractFinishedState() (règle d'accès de la
+  // 3.0.4) : partie en cours → message de blocage, comme l'analyse.
+  // Familles et entropies : probabilites.js (CarcProba), dans la page.
+  // Trous du plateau : moteur (background → serveur local ou worker).
+  const TAB_KEY = "carcCoachTab", K_KEY = "carcCoachProbaK", REF_KEY = "carcCoachProbaRef";
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+
+  function cellLabel(x, y) {
+    const h = x === 0 ? "" : (x > 0 ? "→" : "←") + Math.abs(x);
+    const v = y === 0 ? "" : (y > 0 ? "↓" : "↑") + Math.abs(y);
+    return (h + " " + v).trim() || "·";
+  }
+
+  // ============================================================
+  // POSITION AFFICHÉE — source unique pour l'en-tête et les deux onglets
+  // ============================================================
+  // Lue UNIQUEMENT par extractFinishedState() (règle d'accès). Relue à chaque
+  // changement du plateau dans le DOM (avance rapide, retour en arrière, saut à
+  // un coup du replay), à l'ouverture du panneau, au changement d'onglet, et
+  // toutes les secondes en secours.
+  const CP = typeof CarcProba !== "undefined" ? CarcProba : null;
+
+  function derivePosition(st) {
+    const hand = CP && st.currentTile && CP.letterOfBgaId(st.currentTile.bgId) ? st.currentTile : null;
+    let bag = null, bagError = null;
+    if (CP) {
+      try { bag = CP.bagCounts(st.board.map(b => b.bgId), hand ? [hand.bgId] : []); }
+      catch (e) { bagError = e.message; }
+    }
+    return {
+      st, hand, bag, bagError,
+      placed: st.board.length,
+      // Tuiles restantes de l'en-tête = Sac (onglet Probabilités) + tuile en main
+      remaining: bag ? bag.N + (hand ? 1 : 0) : st.remainingCount,
+      unknown: CP ? st.board.filter(b => !CP.letterOfBgaId(b.bgId)).length : 0,
+    };
+  }
+
+  function positionSignature(st) {
+    return JSON.stringify([
+      st.board.map(b => [b.bgId, b.location && b.location.x, b.location && b.location.y,
+                         b.meeple && b.meeple.color, b.meeple && b.meeple.spot]),
+      st.currentTile && st.currentTile.bgId, st.activePlayer && st.activePlayer.id,
+      st.players.map(p => [p.id, p.score, p.meeplesAvailable]),
+    ]);
+  }
+
+  // Vérification interne : l'en-tête et l'onglet Probabilités doivent afficher
+  // le même nombre de tuiles restantes (Sac + 1 s'il y a une tuile en main).
+  const shown = { sig: null, header: null, proba: null };
+  function noteShown(sig, part, value) {
+    if (shown.sig !== sig) { shown.sig = sig; shown.header = shown.proba = null; }
+    shown[part] = value;
+    if (shown.header === null || shown.proba === null) return;
+    const expected = shown.proba.N + (shown.proba.hand ? 1 : 0);
+    if (shown.header.remaining !== expected) {
+      console.warn(`🏰 Coach : incohérence — en-tête ${shown.header.remaining} restantes, ` +
+                   `onglet Probabilités Sac ${shown.proba.N}${shown.proba.hand ? " + 1 en main" : ""}`);
+    }
+    if (shown.header.unknown === 0 && shown.header.placed + shown.header.remaining !== 72) {
+      console.warn(`🏰 Coach : incohérence — ${shown.header.placed} posées + ` +
+                   `${shown.header.remaining} restantes ≠ 72`);
+    }
+  }
+
+  function createPositionWatcher(panel) {
+    const listeners = [];
+    let lastSig = null, timer = null, observer = null, debounce = null;
+
+    function read(force = false) {
+      if (!document.body.contains(panel)) { stop(); return; }
+      const st = extractFinishedState({ quiet: true });
+      if (st.error) {
+        if (!force && lastSig === "blocked") return;
+        lastSig = "blocked";
+        listeners.forEach(f => f({ blocked: true, error: st.error }));
+        return;
+      }
+      const sig = positionSignature(st);
+      if (!force && sig === lastSig) return;
+      lastSig = sig;
+      const pos = derivePosition(st);
+      pos.sig = sig;
+      listeners.forEach(f => f(pos));
+    }
+    function schedule() {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => read(false), 150);
+    }
+    function start() {
+      read(true);
+      const root = document.getElementById("leftright_page_wrapper");
+      if (root && !observer) {
+        observer = new MutationObserver(muts => {
+          // ignorer les changements du panneau du coach lui-même
+          if (muts.some(m => !panel.contains(m.target))) schedule();
+        });
+        observer.observe(root, { childList: true, subtree: true, characterData: true,
+                                 attributes: true, attributeFilter: ["style", "class", "id"] });
+      }
+      if (!timer) timer = setInterval(() => read(false), 1000);
+    }
+    function stop() {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (observer) { observer.disconnect(); observer = null; }
+      clearTimeout(debounce);
+    }
+    return { subscribe: f => listeners.push(f), start, stop, refresh: () => read(true) };
+  }
+
+  function buildProbaPane(playerSelect) {
+    // probabilites.js est chargé juste avant ce script (même portée de script de contenu)
+    const P = typeof CarcProba !== "undefined" ? CarcProba : null;
+    const pane = document.createElement("div");
+    pane.id = "carc-proba";
+    const head = document.createElement("div");
+    const tableBox = document.createElement("div");
+    const holesBox = document.createElement("div");
+    pane.append(head, tableBox, holesBox);
+
+    let holesReq = 0;
+    let k = Math.max(1, Math.min(20, Number(lsGet(K_KEY, "3")) || 3));
+    let ref = lsGet(REF_KEY, "capuchons");
+    if (!P || !P.FAMILIES.some(f => f.id === ref)) ref = "capuchons";
+
+    const td = (html, extra = "") => `<td${extra}>${html}</td>`;
+
+    function render(pos) {
+      const st = pos.st;
+      const L = LANG === "en" ? "en" : "fr";
+      const me = Number(playerSelect.value) || 0;
+      const players = st.players || [];
+      const other = players.length === 2 ? 1 - me : null;
+      const name = i => (players[i] ? escHtml(players[i].name) : "?");
+
+      // --- Sac (calculé une seule fois dans derivePosition, comme l'en-tête) ---
+      const { hand, bag, unknown } = pos;
+      if (!bag) {
+        head.innerHTML = `<div class="carc-error">${t("bagError", { m: escHtml(pos.bagError || "?") })}</div>`;
+        tableBox.innerHTML = holesBox.innerHTML = "";
+        return;
+      }
+      const { counts, N } = bag;
+      noteShown(pos.sig, "proba", { N, hand: !!hand });
+
+      // Qui tire la prochaine tuile du sac ? Celui qui n'a pas la tuile en main ;
+      // sans tuile en main, le joueur dont c'est le tour.
+      const activeIdx = st.activePlayer ? players.findIndex(p => p.id === st.activePlayer.id) : -1;
+      let nextIdx = null;
+      if (activeIdx >= 0 && players.length === 2) nextIdx = hand ? 1 - activeIdx : activeIdx;
+      const iDrawNext = nextIdx === null ? true : nextIdx === me;
+      const kEff = P.effectiveK(k, N, iDrawNext);
+      const myDraws = P.myRemainingDraws(N, iDrawNext);
+
+      head.innerHTML = `
+        <div class="carc-proba-line">${t("pvLabel", { name: name(me) })}</div>
+        <div class="carc-proba-line">${t("bagLine", { n: N })} ·
+          ${hand ? t("handKnown", { l: P.letterOfBgaId(hand.bgId) }) : t("handUnknown")} ·
+          ${nextIdx === null ? t("nextDrawUnknown", { name: name(me) }) : t("nextDraw", { name: name(nextIdx) })}</div>
+        ${unknown ? `<div class="carc-proba-warn">${t("unknownTiles", { n: unknown })}</div>` : ""}`;
+      if (other !== null) {
+        const sw = document.createElement("button");
+        sw.className = "carc-btn carc-btn-secondary carc-proba-switch";
+        sw.textContent = t("pvSwitch", { name: players[other].name });
+        sw.addEventListener("click", () => {
+          playerSelect.value = String(other);
+          playerSelect.dispatchEvent(new Event("change"));
+        });
+        head.append(sw);
+      }
+      const kRow = document.createElement("div");
+      kRow.className = "carc-proba-line";
+      kRow.innerHTML = `<label>${t("kLabel")} </label>`;
+      const kInput = document.createElement("input");
+      kInput.type = "number"; kInput.min = "1"; kInput.max = "20"; kInput.value = String(k);
+      kInput.className = "carc-proba-k";
+      kInput.addEventListener("change", () => {
+        k = Math.max(1, Math.min(20, Math.floor(Number(kInput.value)) || 3));
+        lsSet(K_KEY, String(k));
+        refresh();
+      });
+      kRow.append(kInput);
+      if (kEff < k) {
+        const c = document.createElement("span");
+        c.className = "carc-proba-note";
+        c.textContent = " " + t("kCapped", { k: kEff, d: myDraws });
+        kRow.append(c);
+      }
+      head.append(kRow);
+
+      // --- Tableau des familles ---
+      if (N === 0) {
+        tableBox.innerHTML = `<div class="carc-proba-note">${t("bagEmpty")}</div>`;
+      } else {
+        const rows = P.familyTable(counts, kEff);
+        const hType = P.typeEntropy(counts);
+        const typesLeft = P.LETTERS.filter(l => counts[l] > 0).length;
+        const refFam = P.FAMILIES.find(f => f.id === ref);
+        const refRow = rows.find(r => r.id === ref);
+        let html = `<table class="carc-proba-table"><thead><tr>
+          <th>${t("colFamily")}</th><th>${t("colQuestion")}</th><th>${t("colNext")}</th>
+          <th>${t("colK", { k: kEff })}</th><th>${t("colH")}</th></tr></thead><tbody>
+          <tr class="carc-proba-exact">${td(`<strong>${t("exactType")}</strong>`)}${td(t("exactQ"))}
+          ${td(t("typesLeft", { m: typesLeft }))}${td("—")}${td(P.fmtBits(hType, L))}</tr>`;
+        for (const r of rows) {
+          const f = P.FAMILIES.find(x => x.id === r.id);
+          html += `<tr data-fam="${r.id}" class="carc-proba-fam${r.id === ref ? " carc-proba-ref" : ""}">
+            ${td(`<strong>${f[L].name}</strong><div class="carc-proba-types">${f.types.join(" ")} · ${r.n}</div>`)}
+            ${td(f[L].q)}${td(P.fmtFraction(r.n, r.N, L))}${td(P.fmtPct(r.pK, L))}${td(P.fmtBits(r.H, L))}</tr>`;
+        }
+        html += `</tbody></table>
+          <div class="carc-proba-ratio">${escHtml(P.ratioPhrase(hType, refRow.H, refFam, L))}</div>
+          <div class="carc-proba-note">${t("refHint")}</div>`;
+        tableBox.innerHTML = html;
+        tableBox.querySelectorAll("tr[data-fam]").forEach(tr => tr.addEventListener("click", () => {
+          ref = tr.dataset.fam;
+          lsSet(REF_KEY, ref);
+          refresh();
+        }));
+      }
+
+      // --- Trous du plateau (moteur) ---
+      holesBox.innerHTML = `<div class="carc-proba-subtitle" title="${escHtml(t("holesTip"))}">
+          ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span></div>
+        <div class="carc-proba-note">${t("holesLoading")}</div>`;
+      const req = ++holesReq;
+      browser.runtime.sendMessage({ type: "board-holes", state: st, player: me, bag: counts })
+        .then(resp => {
+          if (req !== holesReq) return;                // position changée entre-temps
+          renderHoles(resp, kEff, iDrawNext, L);
+        })
+        .catch(e => { if (req === holesReq) renderHoles({ ok: false, error: e.message }, kEff, iDrawNext, L); });
+    }
+
+    function renderHoles(resp, kEff, iDrawNext, L) {
+      const title = `<div class="carc-proba-subtitle" title="${escHtml(t("holesTip"))}">
+          ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span></div>`;
+      if (!resp || !resp.ok) {
+        holesBox.innerHTML = title + `<div class="carc-error">${t("holesError", { m: escHtml((resp && resp.error) || "?") })}</div>`;
+        return;
+      }
+      const holes = (resp.data && resp.data.holes) || [];
+      if (!holes.length) {
+        holesBox.innerHTML = title + `<div class="carc-proba-note">${t("holesNone")}</div>`;
+        return;
+      }
+      let html = title + `<table class="carc-proba-table"><thead><tr>
+        <th>${t("colCell")}</th><th>${t("colTouches")}</th><th>${t("colNext")}</th>
+        <th>${t("colK", { k: kEff })}</th><th>${t("colH")}</th></tr></thead><tbody>`;
+      for (const h of holes.slice(0, 15)) {
+        const p = P.pNext(h.n, h.N);
+        const fits = h.fits && h.fits.length ? h.fits.join(" ") : t("deadHole");
+        // Case de fusion : n = tuiles qui relient les deux villes ; m (autres
+        // tuiles légales) seulement dans l'infobulle, pas dans le tableau.
+        let tip = t(h.fusion ? "mergeFitsTitle" : "fitsTitle", { l: fits });
+        if (h.fusion && h.m > 0) tip += " — " + (h.m === 1 ? t("mergeOther1") : t("mergeOthers", { m: h.m }));
+        html += `<tr title="${escHtml(tip + " — " + t("holesTip"))}">
+          ${td(cellLabel(h.x, h.y), ` title="${escHtml(t("cellTitle"))}"`)}
+          ${td(h.kinds.map(kd => t("kind_" + kd)).join(", "))}
+          ${td(P.fmtFraction(h.n, h.N, L))}${td(P.fmtPct(P.pAtLeastOne(h.n, h.N, kEff), L))}
+          ${td(P.fmtBits(P.binaryEntropy(p), L))}</tr>`;
+      }
+      holesBox.innerHTML = html + "</tbody></table>";
+    }
+
+    // La position vient du watcher du panneau (source unique, partagée avec
+    // l'en-tête). Rendu seulement quand l'onglet est visible. Pas de MCTS.
+    let lastPos = null, visible = false;
+    function refresh() {
+      if (!visible || !lastPos) return;
+      if (!P) { head.innerHTML = `<div class="carc-error">probabilites.js absent</div>`; return; }
+      if (lastPos.blocked) {
+        holesReq++;
+        head.innerHTML = `<div class="carc-error" style="font-size:13px">⏸️ ${lastPos.error}</div>`;
+        tableBox.innerHTML = holesBox.innerHTML = "";
+        return;
+      }
+      render(lastPos);
+    }
+    function update(pos) { lastPos = pos; refresh(); }
+    function show() { visible = true; refresh(); }
+    function hide() { visible = false; holesReq++; }
+
+    playerSelect.addEventListener("change", refresh);
+    return { el: pane, update, show, hide };
+  }
+
   function showModal(state) {
     removeModal();
 
@@ -863,27 +1239,31 @@
     body.style.cssText = "padding: 12px 16px; overflow-y: auto; flex: 1;";
 
     // Stats
+    // En-tête : tuiles posées / restantes, tuile en main, scores et meeples
+    // libres. Recalculé à chaque position affichée (watcher), jamais figé.
     const statsHtml = document.createElement("div");
     statsHtml.className = "carc-stats";
-    const statItems = [
-      ["🧩", t("placed", { n: state.board.length })],
-      ["📦", t("remaining", { n: state.remainingCount })],
-    ];
-    if (state.currentTile) {
-      statItems.push(["🎯", state.currentTile.edges]);
+    statsHtml.id = "carc-coach-stats";
+    function renderStats(pos) {
+      statsHtml.textContent = "";
+      const add = html => {
+        const s = document.createElement("div");
+        s.className = "carc-stat";
+        s.innerHTML = html;
+        statsHtml.append(s);
+      };
+      if (pos.blocked) { add(`<span>⏸️</span> —`); return; }
+      const st = pos.st;
+      add(`<span>🧩</span> <span data-k="placed">${t("placed", { n: pos.placed })}</span>`);
+      add(`<span>📦</span> <span data-k="remaining">${t("remaining", { n: pos.remaining })}</span>`);
+      if (st.currentTile) add(`<span>🎯</span> ${escHtml(st.currentTile.edges)}`);
+      st.players.forEach((p, i) => {
+        add(`<span class="carc-stat-value">${escHtml(p.name)}</span> ` +
+            `<span data-k="p${i}">${p.score}pts · ${p.meeplesAvailable}♟</span>`);
+      });
+      noteShown(pos.sig, "header", { remaining: pos.remaining, placed: pos.placed, unknown: pos.unknown });
     }
-    statItems.forEach(([icon, text]) => {
-      const s = document.createElement("div");
-      s.className = "carc-stat";
-      s.innerHTML = `<span>${icon}</span> ${text}`;
-      statsHtml.append(s);
-    });
-    state.players.forEach(p => {
-      const s = document.createElement("div");
-      s.className = "carc-stat";
-      s.innerHTML = `<span class="carc-stat-value">${p.name}</span> ${p.score}pts · ${p.meeplesAvailable}♟`;
-      statsHtml.append(s);
-    });
+    renderStats(derivePosition(state));
 
     // Sélecteur de joueur
     const playerRow = document.createElement("div");
@@ -1139,13 +1519,44 @@
 
     buttons.append(analyzeBtn, copyBtn, saveBtn, disclaimerBtn);
 
-    body.append(statsHtml, playerRow, serverRow, timeRow, resultsDiv, textarea);
+    // Onglets « Analyse » / « Probabilités » (le disclaimer reste au-dessus des deux)
+    const analysisPane = document.createElement("div");
+    analysisPane.append(serverRow, timeRow, resultsDiv, textarea);
+    const proba = buildProbaPane(playerSelect);
+    const watcher = createPositionWatcher(panel);
+    watcher.subscribe(renderStats);
+    watcher.subscribe(proba.update);
+    const tabBar = document.createElement("div");
+    tabBar.className = "carc-tabs";
+    const tabA = document.createElement("button");
+    const tabP = document.createElement("button");
+    tabA.textContent = t("tabAnalysis");
+    tabP.textContent = t("tabProba");
+    tabBar.append(tabA, tabP);
+    function selectTab(name) {
+      const isP = name === "proba";
+      lsSet(TAB_KEY, name);
+      tabA.className = "carc-tab" + (isP ? "" : " carc-tab-on");
+      tabP.className = "carc-tab" + (isP ? " carc-tab-on" : "");
+      analysisPane.style.display = isP ? "none" : "";
+      proba.el.style.display = isP ? "" : "none";
+      analyzeBtn.style.display = isP ? "none" : "";
+      panel.style.width = isP ? "480px" : "380px";
+      if (isP) proba.show(); else proba.hide();
+      watcher.refresh();                // relecture de la position au changement d'onglet
+    }
+    tabA.addEventListener("click", () => selectTab("analysis"));
+    tabP.addEventListener("click", () => selectTab("proba"));
+
+    body.append(tabBar, statsHtml, playerRow, analysisPane, proba.el);
     // Affiché d'office à la première ouverture du coach
     let seen = false;
     try { seen = localStorage.getItem(DISCLAIMER_KEY) === "1"; } catch {}
     if (!seen) body.prepend(buildDisclaimer());
     panel.append(dragBar, body, buttons);
     document.body.append(panel);
+    selectTab(lsGet(TAB_KEY, "analysis") === "proba" ? "proba" : "analysis");
+    watcher.start();
   }
 
 

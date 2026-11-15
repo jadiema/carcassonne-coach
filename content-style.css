@@ -275,3 +275,38 @@
   0%, 100% { opacity: 1; border-color: #89b4fa; }
   50% { opacity: 0.5; border-color: #b4d0fb; }
 }
+
+/* ============================================================
+   Onglets et onglet « Probabilités » (livre, chapitres 1 à 3)
+   ============================================================ */
+#carc-coach-overlay .carc-tabs { display: flex; gap: 6px; margin: 0 0 10px; }
+#carc-coach-overlay .carc-tab {
+  flex: 1; padding: 6px 8px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  background: #313244; color: #a6adc8; border: 1px solid #45475a;
+}
+#carc-coach-overlay .carc-tab-on { background: #45475a; color: #cdd6f4; border-color: #89b4fa; }
+#carc-proba { font-size: 12px; line-height: 1.45; }
+#carc-proba .carc-proba-line { margin: 4px 0; color: #cdd6f4; }
+#carc-proba .carc-proba-note { color: #a6adc8; font-size: 11px; margin: 4px 0; }
+#carc-proba .carc-proba-warn { color: #f9e2af; font-size: 11px; margin: 4px 0; }
+#carc-proba .carc-proba-switch { margin: 4px 0; padding: 4px 10px; font-size: 12px; }
+#carc-proba .carc-proba-k {
+  width: 48px; background: #313244; color: #cdd6f4; border: 1px solid #45475a;
+  border-radius: 6px; padding: 2px 6px; font-size: 12px;
+}
+#carc-proba .carc-proba-table { width: 100%; border-collapse: collapse; margin: 8px 0 4px; font-size: 11.5px; }
+#carc-proba .carc-proba-table th {
+  text-align: left; color: #a6adc8; font-weight: 600; padding: 4px; border-bottom: 1px solid #45475a;
+}
+#carc-proba .carc-proba-table td { padding: 4px; border-bottom: 1px solid #313244; vertical-align: top; }
+#carc-proba .carc-proba-table td:nth-child(n+3) { white-space: nowrap; }
+#carc-proba .carc-proba-fam { cursor: pointer; }
+#carc-proba .carc-proba-fam:hover { background: #2a2b3d; }
+#carc-proba .carc-proba-ref { background: #1e3a5f; }
+#carc-proba .carc-proba-exact td { color: #f9e2af; }
+#carc-proba .carc-proba-types { color: #7f849c; font-size: 10px; letter-spacing: 0.5px; }
+#carc-proba .carc-proba-ratio {
+  margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: #1e3a5f; color: #89b4fa;
+}
+#carc-proba .carc-proba-subtitle { margin: 12px 0 2px; font-weight: 700; color: #cdd6f4; cursor: help; }
+#carc-proba .carc-proba-info { color: #89b4fa; }

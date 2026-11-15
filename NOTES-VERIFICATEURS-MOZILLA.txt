@@ -27,7 +27,27 @@ then "Analyser". Recommended moves are highlighted on the board after 15 seconds
 During a game in progress, analysis is intentionally blocked.
 
 
-Version 3.0.4 - Analysis restricted to finished games
+Version 3.1.0 - "Probabilities" tab
+
+New tab in the coach panel showing tile-draw probabilities for the position on screen
+(how many tiles of each family remain in the bag, chance of drawing one in the next k
+draws, entropy), as explained in the author's book on Carcassonne.
+- New file probabilites.js (plain, unminified JavaScript, loaded as a content script before
+  content-script.js): pure arithmetic, no DOM access, no network access.
+- The tab reads the game state through the same function as the analysis, so it obeys the
+  same access rule as version 3.0.4 (finished games and replays only; blocked otherwise).
+- "Holes on the board" asks the engine which remaining tiles can legally be placed on a few
+  empty squares (new message "board-holes" from the content script to the background script,
+  handled by the same Web Worker, or by the optional local server at 127.0.0.1:5555). The
+  background script, worker and server refuse it unless the position is marked as finished.
+- The panel header (tiles placed / remaining, scores) now follows the replay position.
+No new permission, no new host, no remote code, no data collection.
+
+How to test: open the replay of a finished Carcassonne game, click the 🏰 button, then the
+"Probabilités" tab, and move through the replay: the figures update with each move.
+
+
+Version 3.0.4 - Analysis restricted to finished games (unchanged in 3.1.0)
 
 The extension only analyses finished games and replays, in line with Board Game Arena's
 rules. Analysis is denied by default and allowed only on positive proof that the game is

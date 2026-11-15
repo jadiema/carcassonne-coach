@@ -981,7 +981,7 @@ def _bga_zones(tile_type: TileType) -> list:
     """
     Zones d'une tuile dans l'ordre de numérotation des spots BGA (1, 2, 3...),
     exprimées dans le repère NON tourné. Ordre déduit de 14 meeples observés
-    (partie Jadiema / Joueur, 11/10/2026) :
+    (partie de référence du 11/10/2026) :
       1. monastère
       2. routes : une seule zone si ≤ 2 côtés route ; carrefour : une zone par
          branche, dans l'ordre de lecture (haut, gauche, droite, bas)

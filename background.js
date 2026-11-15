@@ -21,12 +21,18 @@ const NOT_FINISHED = "Analyse refusée : la position n’est pas marquée comme 
 
 let worker = null;
 const browserJobs = {};
+const holeRequests = {};      // onglet « Probabilités » : réponse directe, sans polling
 
 function ensureWorker() {
   if (worker) return worker;
   worker = new Worker(browser.runtime.getURL("engine_worker.js"));
   worker.onmessage = (e) => {
     const { id, ...rest } = e.data;
+    if (holeRequests[id]) {
+      holeRequests[id](rest.status === "done" ? { ok: true, data: rest } : { ok: false, error: rest.error });
+      delete holeRequests[id];
+      return;
+    }
     browserJobs[id] = rest;
   };
   worker.onerror = (e) => {
@@ -34,6 +40,10 @@ function ensureWorker() {
       if (browserJobs[id].status === "running") {
         browserJobs[id] = { status: "error", error: "Moteur du navigateur : " + (e.message || "erreur") };
       }
+    }
+    for (const id of Object.keys(holeRequests)) {
+      holeRequests[id]({ ok: false, error: "Moteur du navigateur : " + (e.message || "erreur") });
+      delete holeRequests[id];
     }
     worker = null;
   };
@@ -64,6 +74,33 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(r => r.json())
       .then(data => sendResponse(data))
       .catch(err => sendResponse({ ok: false, error: err.message }));
+    return true;
+  }
+
+  // Onglet « Probabilités » : trous réels du plateau (légalité du moteur, sans MCTS)
+  if (message.type === "board-holes") {
+    if (!isMarkedFinished(message.state)) {
+      sendResponse({ ok: false, error: NOT_FINISHED });
+      return;
+    }
+    serverHealth().then(up => {
+      if (up) {
+        fetch(SERVER_URL + "/holes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state: message.state, player: message.player, bag: message.bag }),
+          signal: AbortSignal.timeout(15000),
+        })
+          .then(r => r.json())
+          .then(data => sendResponse(data.status === "done" ? { ok: true, data } : { ok: false, error: data.error }))
+          .catch(err => sendResponse({ ok: false, error: err.message }));
+        return;
+      }
+      const id = "h" + Math.random().toString(36).slice(2, 10);
+      holeRequests[id] = sendResponse;
+      ensureWorker().postMessage({ id, kind: "holes", state: message.state,
+                                   player: message.player, bag: message.bag });
+    });
     return true;
   }
 

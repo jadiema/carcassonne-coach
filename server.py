@@ -80,6 +80,20 @@ def open_folder():
         return jsonify({"ok": False, "error": str(e)})
 
 
+@app.route("/holes", methods=["POST"])
+def holes():
+    """Onglet « Probabilités » : trous réels du plateau (calcul rapide, sans MCTS)."""
+    from browser_coach import board_holes
+    payload = request.get_json(silent=True) or {}
+    data = payload.get("state")
+    if not isinstance(data, dict) or not is_marked_finished(data):
+        return jsonify({"error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}), 403
+    try:
+        return jsonify(board_holes(data, int(payload.get("player", 0)), payload.get("bag") or {}))
+    except Exception as e:
+        return jsonify({"status": "error", "error": f"Erreur de calcul : {e}"}), 400
+
+
 @app.route("/analyze", methods=["POST"])
 def analyze():
     """Lance l'analyse dans un thread et retourne immédiatement un job_id."""

@@ -64,7 +64,7 @@ def main():
     sans = [r for r in rows if not r['meeple']]
     avec = [r for r in rows if r['meeple']]
     print(f'\nPremiers coups avec un virage : {len(rows)}')
-    print(f'  sans meeple (coup de Joueur) : {len(sans)}')
+    print(f'  sans meeple (coup étudié)       : {len(sans)}')
     print(f'  avec un meeple sur la route     : {len(avec)}')
     if not avec: return
     fermees = [r for r in avec if r['closed']]

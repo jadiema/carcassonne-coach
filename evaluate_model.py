@@ -24,7 +24,10 @@ import replay_bga as R
 def validation_games(data_dir: Path, model_path: Path):
     saved = model_path.with_suffix(".validation.json")
     if saved.exists():
-        names = set(json.load(open(saved, encoding="utf-8")))
+        # numéros de table (sans pseudos) → fichiers de parties/
+        from neural_evaluator import game_key, load_validation_keys
+        keys = load_validation_keys(saved)
+        names = {jf.name for jf in data_dir.glob("*.json") if game_key(jf.name) in keys}
         src = f"{saved.name}"
     else:   # même tirage que train() (approximation si le fichier manque)
         names = []
