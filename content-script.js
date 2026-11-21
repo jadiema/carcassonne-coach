@@ -1532,7 +1532,7 @@
     const tabP = document.createElement("button");
     tabA.textContent = t("tabAnalysis");
     tabP.textContent = t("tabProba");
-    tabBar.append(tabA, tabP);
+    tabBar.append(tabP, tabA);          // Probabilités à gauche, Analyse à droite
     function selectTab(name) {
       const isP = name === "proba";
       lsSet(TAB_KEY, name);
