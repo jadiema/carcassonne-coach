@@ -165,6 +165,8 @@ Produit `carcassonne-coach-<version>.xpi`, à faire signer par Mozilla. **Ne pas
 
 Avant toute publication, `python verifier_pseudos.py` vérifie qu’aucun pseudo de joueur ne figure dans les fichiers suivis ni dans l’historique. Il lit les pseudos dans `parties/` au moment où il tourne et n’en contient aucun.
 
+Garde-fou avant chaque push : `python verifier_pseudos.py --installer-hook` installe un hook git `pre-push` local (non versionné, à refaire après chaque clone) qui bloque le push si un pseudo se trouve dans ce qui part (fichiers, noms de fichiers, messages de commits et d’étiquettes), ou si `parties/` est absent.
+
 Tests : `node --test tests/probabilites.test.js` (calculs de l’onglet Probabilités) et `python tests/test_holes.py` (trous du plateau).
 
 ## Organisation des fichiers
