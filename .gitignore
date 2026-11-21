@@ -39,3 +39,7 @@ arena/
 carcassonne_model_v*
 Sauvegarde_coach_carcassonne/
 carcassonne_model.value.pt
+
+# Résultats d’analyse et pages de test (peuvent contenir des pseudos de joueurs)
+*.csv
+replay/
