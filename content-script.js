@@ -124,6 +124,11 @@
       mergeOthers: "{m} autres tuiles peuvent se poser ici sans fusionner : elles fermeraient cette possibilité.",
       mergeOther1: "1 autre tuile peut se poser ici sans fusionner : elle fermerait cette possibilité.",
       mergeFitsTitle: "Tuiles qui réalisent la fusion : {l}",
+      // Renvois au livre (livre.js)
+      legendRank: "Coups classés par le MCTS (nombre de visites)",
+      legendWin: "% : chance de victoire estimée par le réseau",
+      legendMeeple: "♟ : meeple conseillé, compte tenu du prix d’un meeple en réserve",
+      bookLine: "📖 Comprendre ces calculs : ",
     },
     en: {
       notBga: "This page is not a Carcassonne game on BGA.",
@@ -228,11 +233,28 @@
       mergeOthers: "{m} other tiles can be placed here without merging: they would close this possibility.",
       mergeOther1: "1 other tile can be placed here without merging: it would close this possibility.",
       mergeFitsTitle: "Tiles that make the merge: {l}",
+      // Links to the book (livre.js)
+      legendRank: "Moves ranked by MCTS (number of visits)",
+      legendWin: "%: chance of winning estimated by the network",
+      legendMeeple: "♟: suggested meeple, taking into account the price of a meeple in reserve",
+      bookLine: "📖 Understand these calculations: ",
     },
   };
   function t(key, vars = {}) {
     const s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.fr[key] ?? key;
     return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ""));
+  }
+
+  // Renvois au livre : livre.js (CarcLivre) définit les liens et la table des chapitres.
+  // Dans les gabarits HTML, <span data-ch="sujet"></span> marque l'emplacement d'une
+  // pastille « 📖 ch. N » ; fillCh() la crée par le DOM (aucune URL dans le HTML).
+  const LV = typeof CarcLivre !== "undefined" ? CarcLivre : null;
+  function fillCh(container) {
+    if (!container) return;
+    container.querySelectorAll("span[data-ch]").forEach(ph => {
+      if (LV) ph.replaceWith(LV.pastille(document, ph.dataset.ch, LANG));
+      else ph.remove();
+    });
   }
 
   // ============================================================
@@ -1032,8 +1054,10 @@
         <div class="carc-proba-line">${t("pvLabel", { name: name(me) })}</div>
         <div class="carc-proba-line">${t("bagLine", { n: N })} ·
           ${hand ? t("handKnown", { l: P.letterOfBgaId(hand.bgId) }) : t("handUnknown")} ·
-          ${nextIdx === null ? t("nextDrawUnknown", { name: name(me) }) : t("nextDraw", { name: name(nextIdx) })}</div>
+          ${nextIdx === null ? t("nextDrawUnknown", { name: name(me) }) : t("nextDraw", { name: name(nextIdx) })}
+          <span data-ch="sac"></span></div>
         ${unknown ? `<div class="carc-proba-warn">${t("unknownTiles", { n: unknown })}</div>` : ""}`;
+      fillCh(head);
       if (other !== null) {
         const sw = document.createElement("button");
         sw.className = "carc-btn carc-btn-secondary carc-proba-switch";
@@ -1062,6 +1086,7 @@
         c.textContent = " " + t("kCapped", { k: kEff, d: myDraws });
         kRow.append(c);
       }
+      if (LV) kRow.append(" ", LV.pastille(document, "tirages", LANG));
       head.append(kRow);
 
       // --- Tableau des familles ---
@@ -1075,7 +1100,7 @@
         const refRow = rows.find(r => r.id === ref);
         let html = `<table class="carc-proba-table"><thead><tr>
           <th>${t("colFamily")}</th><th>${t("colQuestion")}</th><th>${t("colNext")}</th>
-          <th>${t("colK", { k: kEff })}</th><th>${t("colH")}</th></tr></thead><tbody>
+          <th>${t("colK", { k: kEff })}</th><th>${t("colH")} <span data-ch="entropie"></span></th></tr></thead><tbody>
           <tr class="carc-proba-exact">${td(`<strong>${t("exactType")}</strong>`)}${td(t("exactQ"))}
           ${td(t("typesLeft", { m: typesLeft }))}${td("—")}${td(P.fmtBits(hType, L))}</tr>`;
         for (const r of rows) {
@@ -1088,6 +1113,7 @@
           <div class="carc-proba-ratio">${escHtml(P.ratioPhrase(hType, refRow.H, refFam, L))}</div>
           <div class="carc-proba-note">${t("refHint")}</div>`;
         tableBox.innerHTML = html;
+        fillCh(tableBox);
         tableBox.querySelectorAll("tr[data-fam]").forEach(tr => tr.addEventListener("click", () => {
           ref = tr.dataset.fam;
           lsSet(REF_KEY, ref);
@@ -1097,8 +1123,9 @@
 
       // --- Trous du plateau (moteur) ---
       holesBox.innerHTML = `<div class="carc-proba-subtitle" title="${escHtml(t("holesTip"))}">
-          ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span></div>
+          ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span> <span data-ch="trous"></span></div>
         <div class="carc-proba-note">${t("holesLoading")}</div>`;
+      fillCh(holesBox);
       const req = ++holesReq;
       browser.runtime.sendMessage({ type: "board-holes", state: st, player: me, bag: counts })
         .then(resp => {
@@ -1110,14 +1137,14 @@
 
     function renderHoles(resp, kEff, iDrawNext, L) {
       const title = `<div class="carc-proba-subtitle" title="${escHtml(t("holesTip"))}">
-          ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span></div>`;
+          ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span> <span data-ch="trous"></span></div>`;
       if (!resp || !resp.ok) {
-        holesBox.innerHTML = title + `<div class="carc-error">${t("holesError", { m: escHtml((resp && resp.error) || "?") })}</div>`;
+        holesBox.innerHTML = title + `<div class="carc-error">${t("holesError", { m: escHtml((resp && resp.error) || "?") })}</div>`; fillCh(holesBox);
         return;
       }
       const holes = (resp.data && resp.data.holes) || [];
       if (!holes.length) {
-        holesBox.innerHTML = title + `<div class="carc-proba-note">${t("holesNone")}</div>`;
+        holesBox.innerHTML = title + `<div class="carc-proba-note">${t("holesNone")}</div>`; fillCh(holesBox);
         return;
       }
       let html = title + `<table class="carc-proba-table"><thead><tr>
@@ -1136,7 +1163,7 @@
           ${td(P.fmtFraction(h.n, h.N, L))}${td(P.fmtPct(P.pAtLeastOne(h.n, h.N, kEff), L))}
           ${td(P.fmtBits(P.binaryEntropy(p), L))}</tr>`;
       }
-      holesBox.innerHTML = html + "</tbody></table>";
+      holesBox.innerHTML = html + "</tbody></table>"; fillCh(holesBox);
     }
 
     // La position vient du watcher du panneau (source unique, partagée avec
@@ -1553,7 +1580,12 @@
     let seen = false;
     try { seen = localStorage.getItem(DISCLAIMER_KEY) === "1"; } catch {}
     if (!seen) body.prepend(buildDisclaimer());
-    panel.append(dragBar, body, buttons);
+    // Une ligne vers le livre, en bas du panneau (texte seul, lien ouvert sur clic)
+    const bookLine = document.createElement("div");
+    bookLine.id = "carc-book-line";
+    bookLine.append(t("bookLine"));
+    if (LV) bookLine.append(LV.creerLien(document, LANG, LV.titreCourt(LANG), "carc-book-link"));
+    panel.append(dragBar, body, buttons, bookLine);
     document.body.append(panel);
     selectTab(lsGet(TAB_KEY, "analysis") === "proba" ? "proba" : "analysis");
     watcher.start();
@@ -1655,6 +1687,13 @@
     html += `<div style="font-size:11px;color:#6c7086;margin-bottom:10px">
       ${t("simsIn", { n: stats.simulations, s: stats.elapsed })}
     </div>`;
+    if (moves && moves.length) {
+      html += `<div class="carc-legend">
+        <div>${t("legendRank")} <span data-ch="mcts"></span></div>
+        <div>${t("legendWin")} <span data-ch="reseau"></span></div>
+        <div>${t("legendMeeple")} <span data-ch="meeple"></span></div>
+      </div>`;
+    }
 
     if (!moves || moves.length === 0) {
       html += `<div class="carc-error">${t("noMove")}</div>`;
@@ -1692,6 +1731,7 @@
 
     html += `</div>`;
     container.innerHTML = html;
+    fillCh(container);
 
     // Ajouter les événements au clic sur chaque carte
     container.querySelectorAll(".carc-move-card").forEach(card => {

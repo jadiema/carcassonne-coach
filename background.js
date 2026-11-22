@@ -19,6 +19,15 @@ function isMarkedFinished(state) {
 }
 const NOT_FINISHED = "Analyse refusée : la position n’est pas marquée comme issue d’une partie terminée ou d’un replay.";
 
+// Page de bienvenue locale : une seule fois, à la première installation.
+// Jamais lors d'une mise à jour (reason "update") ni d'une mise à jour du navigateur.
+// tabs.create ne demande aucune permission ; welcome.html est un fichier de l'extension.
+browser.runtime.onInstalled.addListener(details => {
+  if (details && details.reason === "install") {
+    browser.tabs.create({ url: browser.runtime.getURL("welcome.html") });
+  }
+});
+
 let worker = null;
 const browserJobs = {};
 const holeRequests = {};      // onglet « Probabilités » : réponse directe, sans polling

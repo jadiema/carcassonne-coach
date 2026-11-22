@@ -27,6 +27,14 @@ then "Analyser". Recommended moves are highlighted on the board after 15 seconds
 During a game in progress, analysis is intentionally blocked.
 
 
+Links to the author's book and welcome page (new in the next version)
+
+- Links to the author's own book (livre.js: one constant URL, plain <a target="_blank"
+  rel="noopener noreferrer">), opened only when the user clicks, with no tracking, no
+  referrer and no remote resource; a local welcome page (welcome.html) opens once, on
+  first install only (runtime.onInstalled, reason "install"), never on update. No new
+  permission.
+
 Version 3.1.0 - "Probabilities" tab
 
 New tab in the coach panel showing tile-draw probabilities for the position on screen

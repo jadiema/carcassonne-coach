@@ -10,10 +10,12 @@ intégré au navigateur ne démarre plus (« Program terminated with exit(1) »)
 import json, os, sys, zipfile
 
 FILES = ["manifest.json", "background.js", "probabilites.js", "content-script.js", "content-style.css",
-         "popup.html", "popup.js", "engine_worker.js", "LICENSE",
+         "popup.html", "popup.js", "livre.js", "welcome.html", "welcome.js", "engine_worker.js", "LICENSE",
          "carcassonne_engine.py", "neural_evaluator.py", "torch_free.py", "browser_coach.py",
          "carcassonne_model.pt"]
 DIRS = ["images", "pyodide"]
+# Images de travail du livre, non utilisées par l'extension (le paquet reste léger)
+EXCLURE = {"images/livre_recto_verso.jpg", "images/livre_recto_verso_en.jpg"}
 REQUIRED = ["pyodide/python_stdlib.zip", "pyodide/pyodide.asm.wasm", "pyodide/pyodide.js",
             "pyodide/pyodide.asm.js", "pyodide/pyodide-lock.json", "carcassonne_model.pt"]
 
@@ -22,7 +24,8 @@ out = f"carcassonne-coach-{version}.xpi"
 names = list(FILES)
 for d in DIRS:
     for root, _, files in os.walk(d):
-        names += [os.path.join(root, f).replace(os.sep, "/") for f in sorted(files)]
+        names += [n for n in (os.path.join(root, f).replace(os.sep, "/") for f in sorted(files))
+                  if n not in EXCLURE]
 missing = [n for n in names + REQUIRED if not os.path.exists(n)]
 if missing:
     sys.exit(f"❌ Fichiers manquants : {', '.join(sorted(set(missing)))}")

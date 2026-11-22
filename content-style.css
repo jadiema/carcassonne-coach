@@ -310,3 +310,18 @@
 }
 #carc-proba .carc-proba-subtitle { margin: 12px 0 2px; font-weight: 700; color: #cdd6f4; cursor: help; }
 #carc-proba .carc-proba-info { color: #89b4fa; }
+/* Renvois au livre (livre.js) : pastilles « 📖 ch. N », légende de l'analyse, ligne du bas */
+#carc-coach-overlay .carc-ch {
+  display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px;
+  font-size: 10px; font-weight: 400; line-height: 16px; white-space: nowrap;
+  color: #a6adc8; background: #313244; text-decoration: none; cursor: help;
+}
+#carc-coach-overlay a.carc-ch { cursor: pointer; }
+#carc-coach-overlay a.carc-ch:hover { color: #cdd6f4; background: #45475a; }
+#carc-coach-overlay .carc-legend { font-size: 11px; color: #6c7086; margin: -4px 0 10px; line-height: 1.6; }
+#carc-coach-overlay #carc-book-line {
+  padding: 6px 16px 10px; font-size: 11px; color: #6c7086; text-align: center;
+  border-top: 1px solid #313244;
+}
+#carc-coach-overlay #carc-book-line .carc-book-link { color: #89b4fa; font-style: italic; text-decoration: none; }
+#carc-coach-overlay #carc-book-line a.carc-book-link:hover { text-decoration: underline; }

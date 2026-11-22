@@ -55,6 +55,28 @@
       transition: opacity 0.15s;
     }
     .link:hover { opacity: 0.85; }
+    .link.disabled { opacity: 0.45; cursor: default; }
+    .about {
+      border-top: 1px solid #313244;
+      margin-top: 16px;
+      padding-top: 14px;
+      text-align: center;
+    }
+    .about h2 { font-size: 13px; font-weight: 600; margin-bottom: 10px; color: #cdd6f4; }
+    .cover {
+      display: block;
+      width: 200px;
+      max-width: 100%;
+      height: auto;
+      margin: 0 auto 10px;
+      border-radius: 4px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+    }
+    .about .pitch { font-size: 12px; line-height: 1.5; color: #a6adc8; margin-bottom: 10px; }
+    .about .pitch em { color: #cdd6f4; }
+    .legal { font-size: 11px; color: #6c7086; margin-top: 10px; line-height: 1.6; }
+    .legal a { color: #89b4fa; text-decoration: none; }
+    .legal a:hover { text-decoration: underline; }
     .footer {
       text-align: center;
       font-size: 11px;
@@ -92,6 +114,24 @@
     Aucune donnée n’est envoyée ailleurs.<br><br>
     Projet indépendant, sans lien avec Hans im Glück<br>ni avec Board Game Arena.
   </p>
+  <div class="about">
+    <h2 data-fr="À propos" data-en="About">À propos</h2>
+    <!-- Couverture du livre : fichier local (livre.js : images/livre.jpg, ou images/livre_en.jpg
+         en anglais), environ 200 px de large. S'il manque, l'image est masquée (popup.js). -->
+    <img class="cover" id="cover" src="images/livre.jpg" width="200"
+         alt="Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle">
+    <p class="pitch"
+       data-fr="Le coach est le compagnon du livre &lt;em&gt;Carcassonne, le jeu autrement&lt;/em&gt; : chaque calcul y est expliqué pas à pas."
+       data-en="The coach is the companion of the book &lt;em&gt;Rethinking Carcassonne&lt;/em&gt;: every calculation is explained step by step.">Le coach est le compagnon du livre <em>Carcassonne, le jeu autrement</em> : chaque calcul y est expliqué pas à pas.</p>
+    <!-- Bouton « Découvrir le livre » : créé par popup.js avec le lien de livre.js -->
+    <div id="book-button"></div>
+    <p class="legal">
+      <span data-fr="Logiciel libre, licence GNU GPL v3" data-en="Free software, GNU GPL v3 licence">Logiciel libre, licence GNU GPL v3</span><br>
+      <a href="https://github.com/jadiema/carcassonne-coach" target="_blank" rel="noopener noreferrer"
+         data-fr="Code source sur GitHub" data-en="Source code on GitHub">Code source sur GitHub</a>
+    </p>
+  </div>
+  <script src="livre.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

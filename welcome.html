@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>carcassonne-coach</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      line-height: 1.6;
+      padding: 40px 16px;
+    }
+    main { max-width: 640px; margin: 0 auto; }
+    .top { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+    #lang {
+      background: none; border: 1px solid #45475a; color: #a6adc8; border-radius: 8px;
+      padding: 4px 10px; font-size: 13px; cursor: pointer;
+    }
+    #lang:hover { color: #cdd6f4; border-color: #89b4fa; }
+    .logo { font-size: 48px; text-align: center; }
+    h1 { font-size: 26px; text-align: center; margin: 4px 0; }
+    .sub { text-align: center; color: #a6adc8; margin-bottom: 28px; }
+    section {
+      background: #313244; border-radius: 12px; padding: 20px 22px; margin-bottom: 18px;
+    }
+    h2 { font-size: 17px; margin-bottom: 12px; }
+    ol { list-style: none; counter-reset: step; }
+    ol li { counter-increment: step; display: flex; gap: 12px; margin-bottom: 12px; color: #a6adc8; }
+    ol li:last-child { margin-bottom: 0; }
+    ol li::before {
+      content: counter(step); flex: none; width: 26px; height: 26px; border-radius: 50%;
+      background: #89b4fa; color: #1e1e2e; font-weight: 700; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    strong, em { color: #cdd6f4; }
+    .note { font-size: 14px; color: #a6adc8; }
+    .book { display: flex; gap: 18px; align-items: center; }
+    .book img { width: 120px; height: auto; border-radius: 4px; flex: none; box-shadow: 0 4px 14px rgba(0,0,0,0.45); }
+    .book p { color: #a6adc8; margin-bottom: 12px; }
+    .btn {
+      display: inline-block; padding: 9px 16px; background: #89b4fa; color: #1e1e2e;
+      border-radius: 10px; text-decoration: none; font-weight: 600;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn.disabled { opacity: 0.45; cursor: default; }
+    footer { text-align: center; font-size: 12px; color: #6c7086; margin-top: 24px; }
+    footer a { color: #89b4fa; text-decoration: none; }
+    @media (max-width: 480px) { .book { flex-direction: column; text-align: center; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top"><button id="lang" type="button">English</button></div>
+    <div class="logo">🏰</div>
+    <h1>carcassonne-coach</h1>
+    <p class="sub" data-fr="Merci d’avoir installé le coach !" data-en="Thank you for installing the coach!">Merci d’avoir installé le coach !</p>
+
+    <section>
+      <h2 data-fr="En trois étapes" data-en="In three steps">En trois étapes</h2>
+      <ol>
+        <li><span data-fr="Ouvrez une partie de Carcassonne &lt;strong&gt;terminée&lt;/strong&gt;, ou son &lt;strong&gt;replay&lt;/strong&gt;, sur Board Game Arena."
+                  data-en="Open a &lt;strong&gt;finished&lt;/strong&gt; Carcassonne game, or its &lt;strong&gt;replay&lt;/strong&gt;, on Board Game Arena.">Ouvrez une partie de Carcassonne <strong>terminée</strong>, ou son <strong>replay</strong>, sur Board Game Arena.</span></li>
+        <li><span data-fr="Cliquez sur le bouton &lt;strong&gt;🏰&lt;/strong&gt; en bas à droite de la page : le panneau du coach s’ouvre."
+                  data-en="Click the &lt;strong&gt;🏰&lt;/strong&gt; button at the bottom right of the page: the coach panel opens.">Cliquez sur le bouton <strong>🏰</strong> en bas à droite de la page : le panneau du coach s’ouvre.</span></li>
+        <li><span data-fr="Onglet &lt;strong&gt;Probabilités&lt;/strong&gt; : le sac, les chances de tirage et les trous du plateau. Onglet &lt;strong&gt;Analyse&lt;/strong&gt; : cliquez sur &lt;strong&gt;Analyser&lt;/strong&gt;, les meilleurs coups s’affichent sur le plateau."
+                  data-en="&lt;strong&gt;Probabilities&lt;/strong&gt; tab: the bag, the draw chances and the holes on the board. &lt;strong&gt;Analysis&lt;/strong&gt; tab: click &lt;strong&gt;Analyse&lt;/strong&gt;, the best moves are shown on the board.">Onglet <strong>Probabilités</strong> : le sac, les chances de tirage et les trous du plateau. Onglet <strong>Analyse</strong> : cliquez sur <strong>Analyser</strong>, les meilleurs coups s’affichent sur le plateau.</span></li>
+      </ol>
+      <p class="note" style="margin-top:14px"
+         data-fr="Le coach ne fonctionne jamais pendant une partie en cours : c’est un outil pour relire ses parties, pas pour se faire conseiller en jouant. Tout le calcul se fait sur votre ordinateur."
+         data-en="The coach never works during a game in progress: it is a tool to review your games, not to get advice while playing. All computation runs on your computer.">Le coach ne fonctionne jamais pendant une partie en cours : c’est un outil pour relire ses parties, pas pour se faire conseiller en jouant. Tout le calcul se fait sur votre ordinateur.</p>
+    </section>
+
+    <section class="book">
+      <!-- Couverture : fichier local (livre.js, selon la langue) ; masquée s'il manque (welcome.js) -->
+      <img id="cover" src="images/livre.jpg" width="120"
+           alt="Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle">
+      <div>
+        <h2 data-fr="Le livre" data-en="The book">Le livre</h2>
+        <p data-fr="Le coach est le compagnon du livre &lt;em&gt;Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle&lt;/em&gt; : chaque calcul y est expliqué pas à pas. Dans le panneau, les pastilles &lt;strong&gt;📖 ch. N&lt;/strong&gt; indiquent le chapitre correspondant."
+           data-en="The coach is the companion of the book &lt;em&gt;Rethinking Carcassonne – From Chance to Artificial Intelligence&lt;/em&gt;: every calculation is explained step by step. In the panel, the &lt;strong&gt;📖 ch. N&lt;/strong&gt; badges point to the matching chapter.">Le coach est le compagnon du livre <em>Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle</em> : chaque calcul y est expliqué pas à pas. Dans le panneau, les pastilles <strong>📖 ch. N</strong> indiquent le chapitre correspondant.</p>
+        <div id="book-button"></div>
+      </div>
+    </section>
+
+    <footer>
+      <span data-fr="Logiciel libre (GNU GPL v3) · Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena."
+            data-en="Free software (GNU GPL v3) · Independent project, not affiliated with Hans im Glück or Board Game Arena.">Logiciel libre (GNU GPL v3) · Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena.</span><br>
+      <a href="https://github.com/jadiema/carcassonne-coach" target="_blank" rel="noopener noreferrer"
+         data-fr="Code source sur GitHub" data-en="Source code on GitHub">Code source sur GitHub</a>
+    </footer>
+  </main>
+  <script src="livre.js"></script>
+  <script src="welcome.js"></script>
+</body>
+</html>
