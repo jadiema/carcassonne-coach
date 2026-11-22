@@ -231,6 +231,7 @@ carcassonne-coach/
 
 ## History and current state
 
+- **3.1.1**: button and “📖 ch. N” badges pointing to the book, welcome page on installation, Probabilities tab on the left.
 - **3.1.0**: Probabilities tab (chapters 1 to 3 of the book: families, entropy, holes on the board), header synchronised with the replay.
 - **3.0.4**: analysis strictly limited to finished games and replays, also enforced by the engine; network v33 with a value head, trained on 10,000 self-play games (**+69 Elo** against network v28 of 3.0.2, 200 games); opponent’s reply; tile drawn in the correct orientation.
 - **3.0.2**: first signed version, all computation in the browser, French / English interface (withdrawn in favour of 3.0.4).

@@ -231,6 +231,7 @@ carcassonne-coach/
 
 ## Historique et état actuel
 
+- **3.1.1** : bouton et pastilles « 📖 ch. N » vers le livre, page de bienvenue à l’installation, onglet Probabilités à gauche.
 - **3.1.0** : onglet Probabilités (chapitres 1 à 3 du livre : familles, entropie, trous du plateau), en-tête synchronisé avec le replay.
 - **3.0.4** : analyse strictement réservée aux parties terminées et aux replays, contrôlée aussi par le moteur ; réseau v33 avec tête valeur, entraîné sur 10 000 parties d’auto-jeu (**+69 Elo** contre le réseau v28 de la 3.0.2, 200 parties) ; réponse de l’adversaire ; tuile dessinée dans la bonne orientation.
 - **3.0.2** : première version signée, tout le calcul dans le navigateur, interface français / anglais (retirée au profit de la 3.0.4).
