@@ -128,7 +128,8 @@
       legendRank: "Coups classés par le MCTS (nombre de visites)",
       legendWin: "% : chance de victoire estimée par le réseau",
       legendMeeple: "♟ : meeple conseillé, compte tenu du prix d’un meeple en réserve",
-      bookLine: "📖 Comprendre ces calculs : ",
+      bookBtn1: "📖 Le livre du coach",
+      bookBtn2: "Carcassonne, le jeu autrement : chaque calcul expliqué pas à pas",
     },
     en: {
       notBga: "This page is not a Carcassonne game on BGA.",
@@ -237,7 +238,8 @@
       legendRank: "Moves ranked by MCTS (number of visits)",
       legendWin: "%: chance of winning estimated by the network",
       legendMeeple: "♟: suggested meeple, taking into account the price of a meeple in reserve",
-      bookLine: "📖 Understand these calculations: ",
+      bookBtn1: "📖 The book behind the coach",
+      bookBtn2: "Rethinking Carcassonne: every calculation explained step by step",
     },
   };
   function t(key, vars = {}) {
@@ -1580,11 +1582,29 @@
     let seen = false;
     try { seen = localStorage.getItem(DISCLAIMER_KEY) === "1"; } catch {}
     if (!seen) body.prepend(buildDisclaimer());
-    // Une ligne vers le livre, en bas du panneau (texte seul, lien ouvert sur clic)
+    // Bouton vers le livre, en bas du panneau : vignette de la couverture + deux lignes.
+    // Lien ouvert sur clic seulement, dans un nouvel onglet (livre.js).
     const bookLine = document.createElement("div");
     bookLine.id = "carc-book-line";
-    bookLine.append(t("bookLine"));
-    if (LV) bookLine.append(LV.creerLien(document, LANG, LV.titreCourt(LANG), "carc-book-link"));
+    if (LV) {
+      const bookBtn = LV.creerLien(document, LANG, "", "carc-btn carc-book-btn");
+      bookBtn.id = "carc-book-btn";
+      bookBtn.title = LV.titreComplet(LANG);
+      const cover = document.createElement("img");
+      cover.className = "carc-book-cover";
+      cover.alt = "";
+      cover.src = browser.runtime.getURL(LV.couverture(LANG));
+      cover.addEventListener("error", () => cover.remove());
+      const txt = document.createElement("span");
+      txt.className = "carc-book-text";
+      const l1 = document.createElement("strong");
+      l1.textContent = t("bookBtn1");
+      const l2 = document.createElement("span");
+      l2.textContent = t("bookBtn2");
+      txt.append(l1, l2);
+      bookBtn.append(cover, txt);
+      bookLine.append(bookBtn);
+    }
     panel.append(dragBar, body, buttons, bookLine);
     document.body.append(panel);
     selectTab(lsGet(TAB_KEY, "analysis") === "proba" ? "proba" : "analysis");

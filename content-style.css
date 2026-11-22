@@ -319,9 +319,21 @@
 #carc-coach-overlay a.carc-ch { cursor: pointer; }
 #carc-coach-overlay a.carc-ch:hover { color: #cdd6f4; background: #45475a; }
 #carc-coach-overlay .carc-legend { font-size: 11px; color: #6c7086; margin: -4px 0 10px; line-height: 1.6; }
-#carc-coach-overlay #carc-book-line {
-  padding: 6px 16px 10px; font-size: 11px; color: #6c7086; text-align: center;
-  border-top: 1px solid #313244;
+#carc-coach-overlay #carc-book-line { padding: 0 16px 14px; }
+/* Bouton du livre : gabarit de DISCLAIMER (carc-btn), ocre des titres de la couverture */
+#carc-coach-overlay .carc-book-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+  padding: 6px 12px; background: transparent; border: 1px solid #d1ab68; color: #d1ab68;
+  text-decoration: none; text-align: left; line-height: 1.35;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
-#carc-coach-overlay #carc-book-line .carc-book-link { color: #89b4fa; font-style: italic; text-decoration: none; }
-#carc-coach-overlay #carc-book-line a.carc-book-link:hover { text-decoration: underline; }
+#carc-coach-overlay .carc-book-btn:hover,
+#carc-coach-overlay .carc-book-btn:focus-visible {
+  background: #313244; border-color: #e6c88c; color: #e6c88c;
+}
+#carc-coach-overlay .carc-book-cover {
+  height: 40px; width: auto; flex: none; border-radius: 2px; box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+}
+#carc-coach-overlay .carc-book-text { display: flex; flex-direction: column; min-width: 0; }
+#carc-coach-overlay .carc-book-text strong { font-size: 13px; font-weight: 700; }
+#carc-coach-overlay .carc-book-text span { font-size: 11px; font-weight: 400; opacity: 0.9; }

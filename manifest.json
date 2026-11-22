@@ -41,6 +41,20 @@
       ]
     }
   ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "images/livre.jpg",
+        "images/livre_en.jpg"
+      ],
+      "matches": [
+        "https://boardgamearena.com/*",
+        "https://*.boardgamearena.com/*",
+        "https://boardgamearena.net/*",
+        "https://*.boardgamearena.net/*"
+      ]
+    }
+  ],
   "browser_specific_settings": {
     "gecko": {
       "id": "jgrisolia@free.fr",

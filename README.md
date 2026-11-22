@@ -2,12 +2,45 @@
 
 Un coach d’intelligence artificielle pour Carcassonne (jeu de base, 2 joueurs) sur Board Game Arena (BGA). L’extension Firefox lit une partie terminée ou un replay (l’analyse est désactivée pendant une partie en cours, conformément aux règles de Board Game Arena), cherche les meilleurs coups avec une recherche arborescente de Monte-Carlo (MCTS) guidée par un réseau de neurones, et les affiche sur le plateau. Tout le calcul se fait dans le navigateur ; aucune donnée n’est envoyée ailleurs.
 
-> Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena. Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH. Le coach ne reproduit aucune image du jeu : il lit la page de Board Game Arena dans votre navigateur.
+> Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena. Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH. Le coach ne reproduit aucune image du jeu : il lit la page de Board Game Arena dans votre navigateur. Seules les couvertures du livre, incluses dans l’extension, portent le logo Carcassonne, utilisé avec l’autorisation de Hans im Glück.
 
 Ce dépôt accompagne le livre *Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle* (Éditions Jadiema).
 
+## Le livre
+
+<img src="images/livre.jpg" alt="Couverture du livre « Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle »" width="200">
+
+**Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle** (Éditions Jadiema)
+
+Préfaces de Nazario77, champion du monde 2026, et de Boulym, champion de France 2025 et 2026
+
+> **Comment bien jouer à Carcassonne ? Le hasard n’est pas une fatalité. Il se compte.**
+>
+> Vendu à plus de 12 millions d’exemplaires, Carcassonne passe pour un jeu de hasard : on pioche une tuile, on la pose, et la chance fait le reste. Ce livre montre le contraire.
+
+Le coach est le compagnon du livre : chaque calcul de l’extension y est expliqué pas à pas, et les pastilles **📖 ch. N** du panneau renvoient au chapitre correspondant.
+
+Disponible bientôt sur Amazon
+
+## The book
+
+<img src="images/livre_en.jpg" alt="Cover of the book “Rethinking Carcassonne – From Chance to Artificial Intelligence”" width="200">
+
+**Rethinking Carcassonne – From Chance to Artificial Intelligence**
+
+Forewords by Nazario77, 2026 World Champion, and Boulym, French Champion 2025 and 2026
+
+> **How do you play Carcassonne well? Chance is not fate. It can be counted.**
+>
+> With more than 12 million copies sold, Carcassonne is seen as a game of luck: you draw a tile, you place it, and chance does the rest. This book shows the opposite.
+
+The coach is the companion of the book: every calculation in the extension is explained step by step, and the **📖 ch. N** badges in the panel point to the matching chapter.
+
+Coming soon on Amazon
+
 ## Sommaire
 
+- [Le livre](#le-livre) · [The book](#the-book)
 - [Installation](#installation)
 - [Utilisation sur Board Game Arena](#utilisation-sur-board-game-arena)
 - [Fonctionnement](#fonctionnement)
@@ -163,7 +196,7 @@ python build_xpi.py
 
 Produit `carcassonne-coach-<version>.xpi`, à faire signer par Mozilla. **Ne pas utiliser `web-ext build`**, qui omet les fichiers `.zip` (dont `pyodide/python_stdlib.zip`, indispensable).
 
-Avant toute publication, `python verifier_pseudos.py` vérifie qu’aucun pseudo de joueur ne figure dans les fichiers suivis ni dans l’historique. Il lit les pseudos dans `parties/` au moment où il tourne et n’en contient aucun.
+Avant toute publication, `python verifier_pseudos.py` vérifie qu’aucun pseudo de joueur ne figure dans les fichiers suivis ni dans l’historique. Il lit les pseudos dans `parties/` au moment où il tourne et n’en contient aucun. Les personnes qui ont accepté d’être nommées (auteur, préfaciers) figurent dans la liste blanche versionnée `pseudos_autorises.txt`.
 
 Garde-fou avant chaque push : `python verifier_pseudos.py --installer-hook` installe un hook git `pre-push` local (non versionné, à refaire après chaque clone) qui bloque le push si un pseudo se trouve dans ce qui part (fichiers, noms de fichiers, messages de commits et d’étiquettes), ou si `parties/` est absent.
 
@@ -195,6 +228,7 @@ carcassonne-coach/
 ├── diag_rotation.py, check_spots.py, calibrate_spots.py   Diagnostics
 ├── build_xpi.py                Fabrication du paquet de l’extension
 ├── verifier_pseudos.py         Contrôle des pseudos avant publication
+├── pseudos_autorises.txt       Pseudos autorisés (auteur, préfaciers)
 ├── tests/                      Tests de l’onglet Probabilités et des trous du plateau
 ├── updates.json                Mises à jour automatiques de l’extension
 ├── ed1_art_table.json          Table apprise : images 1re édition → types de tuiles

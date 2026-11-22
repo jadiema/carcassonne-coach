@@ -1,0 +1,6 @@
+# Pseudos que verifier_pseudos.py ne cherche pas : personnes qui ont accepté d'être
+# nommées dans le dépôt (auteur, préfaciers du livre). Un pseudo par ligne ; la casse
+# n'a pas d'importance ; les lignes vides et celles qui commencent par # sont ignorées.
+Jadiema
+Nazario77
+Boulym

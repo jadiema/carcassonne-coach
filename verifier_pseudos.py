@@ -9,6 +9,8 @@
 Les pseudos sont lus AU MOMENT DE L'EXÉCUTION dans les parties de parties/
 (dossier ignoré par git) : ce fichier n'en contient aucun. Sont exclus :
   - l'auteur du dépôt (git config user.name) et les noms passés par --exclure ;
+  - la liste blanche versionnée pseudos_autorises.txt : personnes qui ont accepté
+    d'être nommées (un pseudo par ligne, # pour un commentaire) ;
   - les noms d'auto-jeu : ceux qui n'apparaissent que dans les parties
     d'auto-jeu (sous-dossiers selfplay*, fichiers sp_*.json).
 
@@ -40,6 +42,16 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 TAILLE_MAX = 20_000_000          # au-delà (modèles, archives), le fichier n'est pas lu
+LISTE_BLANCHE = ROOT / "pseudos_autorises.txt"
+
+
+def lire_liste_blanche(chemin: Path = LISTE_BLANCHE) -> set:
+    """Pseudos autorisés (en minuscules) ; ensemble vide si le fichier n'existe pas."""
+    try:
+        lignes = chemin.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return set()
+    return {l.strip().lower() for l in lignes if l.strip() and not l.strip().startswith("#")}
 
 
 MARQUE_HOOK = "# carcassonne-coach : garde-fou verifier_pseudos.py"
@@ -146,12 +158,13 @@ def main():
         return installer_hook()
 
     auteur = git("config", "user.name").strip()
-    exclus = {x.lower() for x in a.exclure + ([auteur] if auteur else [])}
+    autorises = lire_liste_blanche()
+    exclus = {x.lower() for x in a.exclure + ([auteur] if auteur else [])} | autorises
     pseudos, lus, n_autojeu = lire_pseudos(Path(a.parties), exclus, a.rapide or a.commits is not None)
     courts = {p for p in pseudos if len(p) < a.min}
     pseudos -= courts
     print(f"Parties lues : {lus} · pseudos cherchés : {len(pseudos)} "
-          f"(exclus : auteur du dépôt, "
+          f"(exclus : auteur du dépôt, {len(autorises)} pseudo(s) autorisé(s) (pseudos_autorises.txt), "
           + ("noms d'auto-jeu" if a.rapide or a.commits is not None else f"{n_autojeu} nom(s) d'auto-jeu")
           + (f", {len(courts)} pseudo(s) de moins de {a.min} caractères" if courts else "") + ")")
     if not pseudos:
