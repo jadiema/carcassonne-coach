@@ -13,9 +13,9 @@
 (function (root) {
   "use strict";
 
-  // Page du livre en français / en anglais (sections du README du dépôt, en attendant
-  // le lien d'achat)
-  const LIEN_LIVRE_FR = "https://github.com/jadiema/carcassonne-coach#le-livre";
+  // Page du livre en français / en anglais (section du README français ou anglais du
+  // dépôt, en attendant le lien d'achat)
+  const LIEN_LIVRE_FR = "https://github.com/jadiema/carcassonne-coach/blob/main/README.fr.md#le-livre";
   const LIEN_LIVRE_EN = "https://github.com/jadiema/carcassonne-coach#the-book";
 
   // Titres et couvertures (fichiers locaux, environ 200 px affichés) de chaque édition

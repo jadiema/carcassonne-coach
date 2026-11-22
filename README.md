@@ -1,32 +1,18 @@
+English · [Français](README.fr.md)
+
 # Carcassonne Coach
 
-Un coach d’intelligence artificielle pour Carcassonne (jeu de base, 2 joueurs) sur Board Game Arena (BGA). L’extension Firefox lit une partie terminée ou un replay (l’analyse est désactivée pendant une partie en cours, conformément aux règles de Board Game Arena), cherche les meilleurs coups avec une recherche arborescente de Monte-Carlo (MCTS) guidée par un réseau de neurones, et les affiche sur le plateau. Tout le calcul se fait dans le navigateur ; aucune donnée n’est envoyée ailleurs.
+An artificial-intelligence coach for Carcassonne (base game, 2 players) on Board Game Arena (BGA). The Firefox extension reads a finished game or a replay (analysis is disabled during a game in progress, in line with Board Game Arena’s rules), searches for the best moves with a Monte Carlo tree search (MCTS) guided by a neural network, and shows them on the board. All computation runs in the browser; no data is sent anywhere.
 
-> Projet indépendant, sans lien avec Hans im Glück ni avec Board Game Arena. Carcassonne est une marque déposée de Hans im Glück Verlags-GmbH. Le coach ne reproduit aucune image du jeu : il lit la page de Board Game Arena dans votre navigateur. Seules les couvertures du livre, incluses dans l’extension, portent le logo Carcassonne, utilisé avec l’autorisation de Hans im Glück.
+> Independent project, not affiliated with Hans im Glück or Board Game Arena. Carcassonne is a registered trademark of Hans im Glück Verlags-GmbH. The coach reproduces no image of the game: it reads the Board Game Arena page in your browser. Only the book covers, included in the extension, carry the Carcassonne logo, used with the permission of Hans im Glück.
 
-Ce dépôt accompagne le livre *Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle* (Éditions Jadiema).
-
-## Le livre
-
-<img src="images/livre.jpg" alt="Couverture du livre « Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle »" width="200">
-
-**Carcassonne, le jeu autrement – Du hasard à l’intelligence artificielle** (Éditions Jadiema)
-
-Préfaces de Nazario77, champion du monde 2026, et de Boulym, champion de France 2025 et 2026
-
-> **Comment bien jouer à Carcassonne ? Le hasard n’est pas une fatalité. Il se compte.**
->
-> Vendu à plus de 12 millions d’exemplaires, Carcassonne passe pour un jeu de hasard : on pioche une tuile, on la pose, et la chance fait le reste. Ce livre montre le contraire.
-
-Le coach est le compagnon du livre : chaque calcul de l’extension y est expliqué pas à pas, et les pastilles **📖 ch. N** du panneau renvoient au chapitre correspondant.
-
-Disponible bientôt sur Amazon
+This repository accompanies the book *Rethinking Carcassonne – From Chance to Artificial Intelligence* (Éditions Jadiema).
 
 ## The book
 
 <img src="images/livre_en.jpg" alt="Cover of the book “Rethinking Carcassonne – From Chance to Artificial Intelligence”" width="200">
 
-**Rethinking Carcassonne – From Chance to Artificial Intelligence**
+**Rethinking Carcassonne – From Chance to Artificial Intelligence** (Éditions Jadiema)
 
 Forewords by Nazario77, 2026 World Champion, and Boulym, French Champion 2025 and 2026
 
@@ -38,233 +24,234 @@ The coach is the companion of the book: every calculation in the extension is ex
 
 Coming soon on Amazon
 
-## Sommaire
+## Contents
 
-- [Le livre](#le-livre) · [The book](#the-book)
+- [The book](#the-book)
 - [Installation](#installation)
-- [Utilisation sur Board Game Arena](#utilisation-sur-board-game-arena)
-- [Fonctionnement](#fonctionnement)
-- [Serveur local (facultatif)](#serveur-local-facultatif)
-- [Constituer les données d’entraînement](#constituer-les-données-dentraînement)
-- [Entraîner et évaluer le réseau](#entraîner-et-évaluer-le-réseau)
-- [Scripts d’analyse](#scripts-danalyse)
-- [Fabriquer le paquet de l’extension](#fabriquer-le-paquet-de-lextension)
-- [Organisation des fichiers](#organisation-des-fichiers)
-- [Historique et état actuel](#historique-et-état-actuel)
-- [Limites connues](#limites-connues)
-- [Licence](#licence)
+- [Using it on Board Game Arena](#using-it-on-board-game-arena)
+- [How it works](#how-it-works)
+- [Local server (optional)](#local-server-optional)
+- [Building the training data](#building-the-training-data)
+- [Training and evaluating the network](#training-and-evaluating-the-network)
+- [Analysis scripts](#analysis-scripts)
+- [Building the extension package](#building-the-extension-package)
+- [File layout](#file-layout)
+- [History and current state](#history-and-current-state)
+- [Known limitations](#known-limitations)
+- [License](#license)
 
 ## Installation
 
-1. Dans Firefox (version 140 ou plus récente), ouvrir la [dernière version](https://github.com/jadiema/carcassonne-coach/releases/latest).
-2. Cliquer sur `carcassonne-coach.xpi`, puis sur **Ajouter**.
+1. In Firefox (version 140 or later), open the [latest release](https://github.com/jadiema/carcassonne-coach/releases/latest).
+2. Click `carcassonne-coach.xpi`, then **Add**.
 
-C’est tout : rien d’autre à installer. L’extension est signée par Mozilla, elle reste en place après le redémarrage de Firefox et les versions suivantes s’installent automatiquement.
+That’s all: nothing else to install. The extension is signed by Mozilla, it stays in place after Firefox restarts, and later versions install automatically.
 
-## Utilisation sur Board Game Arena
+## Using it on Board Game Arena
 
-1. Ouvrir une partie terminée ou un replay de Carcassonne sur BGA.
-2. Cliquer sur le bouton 🏰 ajouté par l’extension, choisir son joueur et le temps d’analyse.
-3. Lancer l’analyse : les meilleurs coups apparaissent sur le plateau. La tuile conseillée est dessinée dans sa bonne orientation, avec le meeple à sa place.
+1. Open a finished Carcassonne game or a replay on BGA.
+2. Click the 🏰 button added by the extension, choose your player and the analysis time.
+3. Start the analysis: the best moves appear on the board. The suggested tile is drawn in its correct orientation, with the meeple in place.
 
-L’onglet **Probabilités** reprend les calculs des chapitres 1 à 3 du livre : état du sac, familles de tuiles (arrêts de route, lignes, villes en coin, vrais virages, capuchons, courbes) avec la chance au prochain tirage et sur vos prochains tirages, entropie en bits, et trous du plateau autour de vos structures, y compris la fusion avec une ville adverse. Il suit la position affichée du replay, en avant comme en arrière.
+The **Probabilities** tab follows the calculations of chapters 1 to 3 of the book: what is left in the bag, tile families (road ends, straights, corner cities, true curves, city caps, bends) with the chance on the next draw and over your next draws, entropy in bits, and the holes on the board around your structures, including the merge with an opponent’s city. It follows the replay position shown on screen, forwards and backwards.
 
-L’interface existe en français et en anglais : cliquer sur le drapeau du panneau pour changer de langue (le choix est mémorisé).
+The interface is available in French and English: click the flag in the panel to switch language (the choice is remembered).
 
-## Fonctionnement
+## How it works
 
 ```
  Firefox (boardgamearena.com)
 ┌───────────────────────────────┐         ┌──────────────────────────────────────┐
 │ content-script.js             │         │ engine_worker.js (Pyodide + NumPy)   │
-│  · lit plateau, tuile en      │ ──────▶ │   └─ browser_coach.py                │
-│    main, cases libres, sac    │         │        · carcassonne_engine.py       │
-│  · affiche les coups          │ ◀────── │          règles, décompte, MCTS      │
-│    recommandés                │         │        · réseau en NumPy             │
+│  · reads board, tile in       │ ──────▶ │   └─ browser_coach.py                │
+│    hand, free squares, bag    │         │        · carcassonne_engine.py       │
+│  · shows the recommended      │ ◀────── │          rules, scoring, MCTS        │
+│    moves                      │         │        · network in NumPy            │
 └───────────────────────────────┘         │          (torch_free.py)             │
                                           └──────────────────────────────────────┘
-                    (si lancé : server.py sur le port 5555, environ deux fois plus rapide)
+                    (if running: server.py on port 5555, about twice as fast)
 ```
 
-- **L’extension** lit la position sur BGA : plateau, tuile en main, cases libres, tuiles restantes, scores et meeples.
-- **Le moteur Python** (`carcassonne_engine.py`) tourne dans le navigateur grâce à Pyodide 0.26.4. Il génère les coups légaux, puis lance le MCTS pendant le temps choisi. Les coups sont classés par nombre de visites, et le prix d’un meeple immobilisé est pris en compte.
-- **Le réseau** (`carcassonne_model.pt`, lu sans PyTorch par `torch_free.py`) fournit :
-  - une **politique** : une probabilité pour chaque (case, rotation), qui oriente l’exploration ;
-  - une **valeur** : la chance de victoire, qui juge les positions dans la recherche.
-- **La réponse de l’adversaire** (`expectimax_rerank`) départage les meilleurs coups en regardant aussi le coup suivant de l’adversaire (Expectimax sur deux coups), avec une chance de fermer les villes calculée sur le sac et les fusions de villes.
+- **The extension** reads the position on BGA: board, tile in hand, free squares, remaining tiles, scores and meeples.
+- **The Python engine** (`carcassonne_engine.py`) runs in the browser thanks to Pyodide 0.26.4. It generates the legal moves, then runs the MCTS for the chosen time. Moves are ranked by number of visits, and the price of a tied-up meeple is taken into account.
+- **The network** (`carcassonne_model.pt`, read without PyTorch by `torch_free.py`) provides:
+  - a **policy**: a probability for each (square, rotation), which steers the exploration;
+  - a **value**: the chance of winning, which judges positions in the search.
+- **The opponent’s reply** (`expectimax_rerank`) breaks ties between the best moves by also looking at the opponent’s next move (two-move Expectimax), with a chance of closing cities computed from the bag and city merges.
 
-## Serveur local (facultatif)
+## Local server (optional)
 
-L’extension n’a besoin de rien d’autre. Pour aller environ deux fois plus vite, on peut lancer le serveur Python du dépôt : l’extension l’utilise alors automatiquement.
+The extension needs nothing else. To go about twice as fast, you can start the repository’s Python server: the extension then uses it automatically.
 
 ```
 pip install -r requirements.txt
 python server.py
 ```
 
-Sous Windows, `start_server.bat` fait la même chose. Le serveur écoute sur `http://127.0.0.1:5555`.
+On Windows, `start_server.bat` does the same. The server listens on `http://127.0.0.1:5555`.
 
-## Constituer les données d’entraînement
+## Building the training data
 
-1. Sur BGA, ouvrir une partie terminée (de préférence entre joueurs forts) et cliquer sur le bouton JSON de l’extension.
-2. Ranger les fichiers dans le dossier `parties/`.
-3. Vérifier que chaque partie se rejoue exactement :
+1. On BGA, open a finished game (preferably between strong players) and click the extension’s JSON button.
+2. Put the files in the `parties/` folder.
+3. Check that each game replays exactly:
 
 ```
 python replay_bga.py parties
 ```
 
-Chaque partie doit afficher `✅ … rejouée à l’identique` : le rejeu refait tous les coups et compare les scores finaux à ceux de BGA. Les parties en échec sont écartées de l’entraînement.
+Each game must show `✅ … rejouée à l’identique`: the replay redoes every move and compares the final scores with BGA’s. Games that fail are left out of training.
 
-**Parties en tuiles « 1re édition ».** Dans les replays, BGA affiche l’édition choisie par les joueurs ; l’extension ne reconnaît pas ces images. `replay_bga.py` retrouve alors les tuiles par déduction et apprend la correspondance image → type dans `ed1_art_table.json`. Relancer le contrôle une seconde fois permet souvent de rejouer les parties qui avaient échoué.
+**Games with “1st edition” tiles.** In replays, BGA shows the edition chosen by the players; the extension does not recognise these images. `replay_bga.py` then identifies the tiles by deduction and learns the image → type mapping in `ed1_art_table.json`. Running the check a second time often replays the games that had failed.
 
-> Le contenu de `parties/` n’est pas versionné : ce sont les parties d’autres joueurs, avec leurs pseudos. Seul `carcassonne_model.validation.json` (liste des parties de validation) est suivi.
+> The content of `parties/` is not versioned: these are other players’ games, with their usernames. Only `carcassonne_model.validation.json` (the list of validation games) is tracked.
 
-## Entraîner et évaluer le réseau
+## Training and evaluating the network
 
-L’entraînement demande PyTorch ; une carte graphique (CUDA) l’accélère nettement.
+Training requires PyTorch; a graphics card (CUDA) speeds it up considerably.
 
-### Auto-jeu
+### Self-play
 
 ```
 python selfplay.py --value
 ```
 
-Le moteur joue contre lui-même avec le réseau courant ; les parties sont rangées dans `parties/`.
+The engine plays against itself with the current network; the games are stored in `parties/`.
 
-### Entraîner
+### Training
 
 ```
 python neural_evaluator.py train parties 30 --selfplay-keep=0.04
 ```
 
-- 30 époques au maximum, arrêt automatique après 4 époques sans progrès en validation ;
-- la validation est figée (`carcassonne_model.validation.json`) ; `--new-split` en tire une nouvelle ;
-- chaque plateau est présenté sous ses 4 rotations ;
-- `--selfplay-keep` règle la part des positions d’auto-jeu conservées ;
-- les parties sont lues en parallèle.
+- at most 30 epochs, automatic stop after 4 epochs without progress on validation;
+- the validation set is fixed (`carcassonne_model.validation.json`); `--new-split` draws a new one;
+- each board is presented in its 4 rotations;
+- `--selfplay-keep` sets the share of self-play positions kept;
+- games are read in parallel.
 
-Au début de l’entraînement, vérifier la ligne « Contrôle des rotations » : aucune rotation ne doit rester « sans équivalent ».
+At the start of training, check the « Contrôle des rotations » line: no rotation should remain « sans équivalent ».
 
-### Évaluer
+### Evaluating
 
 ```
 python arena.py --a carcassonne_model_v33.pt --b carcassonne_model_v28.pt
 ```
 
-Fait jouer deux configurations l’une contre l’autre et donne l’écart en Elo. Options : `--sims-a/b` (nombre de simulations), `--value-a/b` (tête valeur), `--reply-a/b` (réponse de l’adversaire).
+Plays two configurations against each other and gives the Elo difference. Options: `--sims-a/b` (number of simulations), `--value-a/b` (value head), `--reply-a/b` (opponent’s reply).
 
 ```
 python evaluate_model.py parties
 ```
 
-Rejoue les parties de validation et mesure, sur chaque position, si le coup réellement joué par le joueur fort figure dans le top 1 / top 3 de chaque méthode. Résultats du réseau v33 (989 positions des 15 parties de validation) :
+Replays the validation games and measures, for each position, whether the move actually played by the strong player is in the top 1 / top 3 of each method. Results of network v33 (989 positions from the 15 validation games):
 
-| Méthode | Top 1 | Top 3 |
+| Method | Top 1 | Top 3 |
 |---|---|---|
-| Hasard parmi les coups légaux | 6,4 % | 19,0 % |
-| Heuristique du moteur | 31,2 % | 48,6 % |
-| Réseau, tête valeur | 20,3 % | 37,8 % |
-| Réseau, politique | 36,4 % | 62,5 % |
+| Random among legal moves | 6.4% | 19.0% |
+| Engine heuristic | 31.2% | 48.6% |
+| Network, value head | 20.3% | 37.8% |
+| Network, policy | 36.4% | 62.5% |
 
-La liste de validation (`carcassonne_model.validation.json`) ne contient que des numéros de table ; ces parties ne doivent jamais servir à l’entraînement.
+The validation list (`carcassonne_model.validation.json`) contains only table numbers; these games must never be used for training.
 
-`bench_mcts.py` mesure si la recherche MCTS retrouve le coup des joueurs forts (top 1 / top 3, coup complet).
+`bench_mcts.py` measures whether the MCTS search finds the strong players’ move (top 1 / top 3, full move).
 
-## Scripts d’analyse
+## Analysis scripts
 
-| Script | Rôle | Commande |
+| Script | Purpose | Command |
 |---|---|---|
-| `replay_bga.py` | Rejoue les parties et vérifie les scores finaux ; apprend les images de la 1re édition | `python replay_bga.py parties` |
-| `evaluate_model.py` | Compare réseau, heuristique et hasard sur les parties de validation | `python evaluate_model.py parties` |
-| `prix_meeple.py` | Suit chaque meeple de sa pose à son retour : rendement (points par tour bloqué) selon la phase, la structure et le stock de meeples | `python prix_meeple.py parties` |
-| `prix_tuile_blocage.py` | Prix de la tuile de blocage | `python prix_tuile_blocage.py parties` |
-| `stats_tuiles.py` | Statistiques des tuiles | `python stats_tuiles.py parties` |
-| `virage_premier_tour.py` | Premier tour avec un virage simple : durée de blocage d’un meeple posé sur la route, ou fréquence du virage posé sans meeple (le « coup de Nazario ») | `python virage_premier_tour.py parties` |
-| `bayes_paysans.py` | Cherche deux styles de joueurs (agressif / prudent) dans les prés par un mélange de lois binomiales (algorithme EM) | `python bayes_paysans.py parties` |
-| `diag_rotation.py` | Diagnostic de la convention de rotation de l’augmentation des données | `python diag_rotation.py parties` |
-| `check_spots.py` | Vérifie la table des emplacements de meeples BGA | `python check_spots.py parties` |
-| `calibrate_spots.py` | Recherche l’affectation des paysans ambigus quand seul le décompte final diffère de BGA | `python calibrate_spots.py parties` |
+| `replay_bga.py` | Replays the games and checks the final scores; learns the 1st-edition images | `python replay_bga.py parties` |
+| `evaluate_model.py` | Compares network, heuristic and random play on the validation games | `python evaluate_model.py parties` |
+| `prix_meeple.py` | Follows each meeple from placement to return: yield (points per turn tied up) by phase, structure and meeple supply | `python prix_meeple.py parties` |
+| `prix_tuile_blocage.py` | Price of the blocking tile | `python prix_tuile_blocage.py parties` |
+| `stats_tuiles.py` | Tile statistics | `python stats_tuiles.py parties` |
+| `virage_premier_tour.py` | First turn with a simple curve: how long a meeple placed on the road stays tied up, or how often the curve is played without a meeple (the « coup de Nazario ») | `python virage_premier_tour.py parties` |
+| `bayes_paysans.py` | Looks for two player styles (aggressive / cautious) in the fields with a mixture of binomial distributions (EM algorithm) | `python bayes_paysans.py parties` |
+| `diag_rotation.py` | Diagnoses the rotation convention of the data augmentation | `python diag_rotation.py parties` |
+| `check_spots.py` | Checks the table of BGA meeple spots | `python check_spots.py parties` |
+| `calibrate_spots.py` | Searches for the assignment of ambiguous farmers when only the final scoring differs from BGA | `python calibrate_spots.py parties` |
 
-Les fichiers produits (CSV, PNG) ne sont pas versionnés.
+Output files (CSV, PNG) are not versioned.
 
-## Fabriquer le paquet de l’extension
+## Building the extension package
 
 ```
 python build_xpi.py
 ```
 
-Produit `carcassonne-coach-<version>.xpi`, à faire signer par Mozilla. **Ne pas utiliser `web-ext build`**, qui omet les fichiers `.zip` (dont `pyodide/python_stdlib.zip`, indispensable).
+Produces `carcassonne-coach-<version>.xpi`, to be signed by Mozilla. **Do not use `web-ext build`**, which leaves out `.zip` files (including `pyodide/python_stdlib.zip`, which is essential).
 
-Avant toute publication, `python verifier_pseudos.py` vérifie qu’aucun pseudo de joueur ne figure dans les fichiers suivis ni dans l’historique. Il lit les pseudos dans `parties/` au moment où il tourne et n’en contient aucun. Les personnes qui ont accepté d’être nommées (auteur, préfaciers) figurent dans la liste blanche versionnée `pseudos_autorises.txt`.
+Before any release, `python verifier_pseudos.py` checks that no player username appears in the tracked files or in the history. It reads the usernames from `parties/` when it runs and contains none itself. People who have agreed to be named (author, foreword writers) are listed in the versioned allow-list `pseudos_autorises.txt`.
 
-Garde-fou avant chaque push : `python verifier_pseudos.py --installer-hook` installe un hook git `pre-push` local (non versionné, à refaire après chaque clone) qui bloque le push si un pseudo se trouve dans ce qui part (fichiers, noms de fichiers, messages de commits et d’étiquettes), ou si `parties/` est absent.
+Safeguard before each push: `python verifier_pseudos.py --installer-hook` installs a local git `pre-push` hook (not versioned, to be redone after each clone) that blocks the push if a username is found in what is being pushed (files, file names, commit and tag messages), or if `parties/` is missing.
 
-Tests : `node --test tests/probabilites.test.js` (calculs de l’onglet Probabilités) et `python tests/test_holes.py` (trous du plateau).
+Tests: `node --test tests/probabilites.test.js` (calculations of the Probabilities tab) and `python tests/test_holes.py` (holes on the board).
 
-## Organisation des fichiers
+## File layout
 
 ```
 carcassonne-coach/
-├── manifest.json               Extension Firefox (Manifest V3)
-├── content-script.js           Lecture de la partie sur BGA, affichage des coups
+├── manifest.json               Firefox extension (Manifest V3)
+├── content-script.js           Reads the game on BGA, shows the moves
 ├── content-style.css
 ├── background.js
-├── engine_worker.js            Moteur dans le navigateur (Pyodide)
-├── probabilites.js            Calculs de l’onglet Probabilités
+├── engine_worker.js            Engine in the browser (Pyodide)
+├── probabilites.js            Calculations of the Probabilities tab
 ├── popup.html, popup.js
-├── images/                     Icônes de l’extension
-├── pyodide/                    Pyodide 0.26.4 et NumPy
-├── browser_coach.py            Point d’entrée du coach dans le navigateur
-├── torch_free.py               Lecture du réseau sans PyTorch
-├── verify_torch_free.py        Vérifie que torch_free.py donne le même résultat que PyTorch
-├── carcassonne_engine.py       Règles, décompte, génération des coups, MCTS
-├── neural_evaluator.py         Encodage du plateau, réseau, entraînement
-├── server.py, start_server.bat Serveur local facultatif (port 5555)
-├── selfplay.py, arena.py, bench_mcts.py   Auto-jeu, matchs, banc du MCTS
-├── replay_bga.py, evaluate_model.py       Rejeu et évaluation
+├── images/                     Extension icons
+├── pyodide/                    Pyodide 0.26.4 and NumPy
+├── browser_coach.py            Entry point of the coach in the browser
+├── torch_free.py               Reads the network without PyTorch
+├── verify_torch_free.py        Checks that torch_free.py gives the same result as PyTorch
+├── carcassonne_engine.py       Rules, scoring, move generation, MCTS
+├── neural_evaluator.py         Board encoding, network, training
+├── server.py, start_server.bat Optional local server (port 5555)
+├── selfplay.py, arena.py, bench_mcts.py   Self-play, matches, MCTS bench
+├── replay_bga.py, evaluate_model.py       Replay and evaluation
 ├── prix_meeple.py, prix_tuile_blocage.py, stats_tuiles.py,
 │   virage_premier_tour.py, bayes_paysans.py                Analyses
 ├── diag_rotation.py, check_spots.py, calibrate_spots.py   Diagnostics
-├── build_xpi.py                Fabrication du paquet de l’extension
-├── verifier_pseudos.py         Contrôle des pseudos avant publication
-├── pseudos_autorises.txt       Pseudos autorisés (auteur, préfaciers)
-├── tests/                      Tests de l’onglet Probabilités et des trous du plateau
-├── updates.json                Mises à jour automatiques de l’extension
-├── ed1_art_table.json          Table apprise : images 1re édition → types de tuiles
-├── carcassonne_model.pt        Réseau courant (politique + valeur)
-├── carcassonne_model.validation.json   Les parties de validation figées
-├── parties/                    Parties exportées (non versionnées)
-├── NOTES-VERIFICATEURS-MOZILLA.txt   Notes et procédure de test pour les vérificateurs Mozilla
-├── CLAUDE.md                   Consignes pour l’assistant de développement (Claude Code)
+├── build_xpi.py                Builds the extension package
+├── verifier_pseudos.py         Username check before release
+├── pseudos_autorises.txt       Allowed usernames (author, foreword writers)
+├── tests/                      Tests of the Probabilities tab and of the holes on the board
+├── updates.json                Automatic updates of the extension
+├── ed1_art_table.json          Learned table: 1st-edition images → tile types
+├── carcassonne_model.pt        Current network (policy + value)
+├── carcassonne_model.validation.json   The fixed validation games
+├── parties/                    Exported games (not versioned)
+├── NOTES-VERIFICATEURS-MOZILLA.txt   Notes and test procedure for Mozilla reviewers
+├── CLAUDE.md                   Instructions for the development assistant (Claude Code)
 ├── requirements.txt
 ├── LICENSE
-└── README.md
+├── README.md                   Overview in English (shown by GitHub)
+└── README.fr.md                Overview in French
 ```
 
-## Historique et état actuel
+## History and current state
 
-- **3.1.0** : onglet Probabilités (chapitres 1 à 3 du livre : familles, entropie, trous du plateau), en-tête synchronisé avec le replay.
-- **3.0.4** : analyse strictement réservée aux parties terminées et aux replays, contrôlée aussi par le moteur ; réseau v33 avec tête valeur, entraîné sur 10 000 parties d’auto-jeu (**+69 Elo** contre le réseau v28 de la 3.0.2, 200 parties) ; réponse de l’adversaire ; tuile dessinée dans la bonne orientation.
-- **3.0.2** : première version signée, tout le calcul dans le navigateur, interface français / anglais (retirée au profit de la 3.0.4).
-- **v32** : MCTS classé par visites et prix du meeple ; l’accord avec les joueurs forts passe d’environ 13 % à 25 % en top 1.
-- **v28** : politique à 4 rotations, contrôle de cohérence des rotations.
+- **3.1.0**: Probabilities tab (chapters 1 to 3 of the book: families, entropy, holes on the board), header synchronised with the replay.
+- **3.0.4**: analysis strictly limited to finished games and replays, also enforced by the engine; network v33 with a value head, trained on 10,000 self-play games (**+69 Elo** against network v28 of 3.0.2, 200 games); opponent’s reply; tile drawn in the correct orientation.
+- **3.0.2**: first signed version, all computation in the browser, French / English interface (withdrawn in favour of 3.0.4).
+- **v32**: MCTS ranked by visits and price of the meeple; agreement with strong players goes from about 13% to 25% in top 1.
+- **v28**: 4-rotation policy, rotation consistency check.
 
-Mesures en arène : doubler le calcul ne rapporte qu’environ +23 Elo (non significatif), le facteur limitant est l’évaluation. Un second cycle d’auto-jeu (réseau v34) n’a pas fait mieux que la v33, qui reste le réseau de référence.
+Arena measurements: doubling the computation only brings about +23 Elo (not significant); the limiting factor is the evaluation. A second self-play cycle (network v34) did no better than v33, which remains the reference network.
 
-Données : 401 parties humaines rejouées à l’identique, dont des parties en tuiles 1re édition, et plusieurs milliers de parties d’auto-jeu.
+Data: 401 human games replayed exactly, including games with 1st-edition tiles, and several thousand self-play games.
 
-## Limites connues
+## Known limitations
 
-- **Début de partie** : avec beaucoup de tuiles restantes, les coups raisonnables sont proches et leur ordre tient en partie au hasard des simulations.
-- **Plans à plusieurs coups** : partages, jonctions futures et blocages restent difficiles à voir au-delà de la réponse de l’adversaire.
-- **Vitesse** : moteur en Python pur, plus lent encore dans le navigateur ; le serveur local va environ deux fois plus vite.
-- **Variantes** : seul le jeu de base à 2 joueurs est pris en charge.
+- **Opening**: with many tiles left, reasonable moves are close and their order partly depends on the randomness of the simulations.
+- **Multi-move plans**: sharing, future junctions and blocks remain hard to see beyond the opponent’s reply.
+- **Speed**: pure-Python engine, slower still in the browser; the local server is about twice as fast.
+- **Variants**: only the 2-player base game is supported.
 
-## Licence
+## License
 
 Copyright © 2026 Jérémie (Jadiema) — Éditions Jadiema
 
-Ce programme est un logiciel libre : vous pouvez le redistribuer et le modifier selon les termes de la GNU General Public License version 3, telle que publiée par la Free Software Foundation. Toute version modifiée que vous distribuez doit rester sous la même licence, avec son code source.
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License version 3, as published by the Free Software Foundation. Any modified version you distribute must remain under the same license, with its source code.
 
-Ce programme est distribué dans l’espoir qu’il sera utile, mais sans aucune garantie, pas même la garantie implicite de qualité marchande ou d’adéquation à un usage particulier. Le texte complet de la licence figure dans le fichier `LICENSE`.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. The full text of the license is in the `LICENSE` file.
