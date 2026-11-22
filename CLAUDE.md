@@ -8,7 +8,7 @@ Langue du projet : **français** (code commenté en français, messages et docs 
 
 ## Architecture
 
-- **Extension Firefox** (Manifest V3, identifiant `jgrisolia@free.fr`, version 3.1.0 signée
+- **Extension Firefox** (Manifest V3, identifiant `jgrisolia@free.fr`, version 3.1.1 signée
   par Mozilla en mode non répertorié, mise à jour automatique via `updates.json`) :
   - `content-script.js` : lit la position sur BGA, panneau du coach (onglets Probabilités et
     Analyse), bouton DISCLAIMER.
@@ -52,14 +52,18 @@ python evaluate_model.py parties --step 2          # banc de test : top1/top3 vs
 python verify_torch_free.py parties                # réseau NumPy = réseau PyTorch
 ```
 
-## État actuel (3.1.0)
+## État actuel (3.1.1)
 
-- Extension 3.1.0 : réseau **v33** (tête policy + tête value), entraîné sur les parties de
+- Extension 3.1.1 : réseau **v33** (tête policy + tête value), entraîné sur les parties de
   joueurs forts et l'auto-jeu. Validation (15 parties, 989 positions), case seule :
   top1 41,2 %, top3 71,0 % (heuristique : 35,6 % / 57,0 %).
 - Analyse **réservée aux parties terminées et aux replays** (3.0.4) : interdite par défaut,
   autorisée seulement avec une preuve de fin (`finishedProof()`), vérifiée à chaque point
   d'entrée (bouton, export JSON, serveur local, worker).
+- Renvois vers le livre (3.1.1) : `livre.js` (liens, titres FR/EN, pastilles « 📖 ch. N »), bouton
+  du livre en bas du panneau, section À propos de la fenêtre de l'icône, page de bienvenue
+  (`welcome.html`) ouverte seulement à l'installation ; liens vers les sections Le livre / The book
+  des README (README.md en anglais, README.fr.md en français). Onglet Probabilités à gauche.
 - Onglet **Probabilités** (3.1.0) : sac, familles de tuiles, chances de tirage, entropie,
   trous du plateau ; lit la position uniquement via `extractFinishedState()` et suit le replay.
   En-tête du panneau et onglet lisent la même position.
