@@ -27,6 +27,28 @@ then "Analyser". Recommended moves are highlighted on the board after 15 seconds
 During a game in progress, analysis is intentionally blocked.
 
 
+Version 3.1.2 - Tile recognition (1st edition artwork), bag count, translated errors
+
+Bug fixes only. No new permission, no new host, no remote code, no data collection.
+- New file tuiles.js (plain, unminified JavaScript, loaded as a content script between
+  probabilites.js and content-script.js): tile recognition moved out of content-script.js,
+  pure functions with no DOM and no network access. It adds the sprite table of the
+  "1st edition" tile artwork of Board Game Arena, so that the tile to be placed is
+  recognised whichever artwork the player chose (before: "No tile in hand detected").
+- The bag now excludes every tile already drawn (BGA shows the active player's tile and
+  the other player's next tile), so the count matches BGA's own "tiles left" counter.
+- The active player is also read from BGA's page object (gameui.getActivePlayerId(), read
+  through wrappedJSObject, like the game state already read since 3.0.4), so that it is
+  found when the title bar says "You" instead of a name. Read only, nothing is modified.
+- Error messages from the engine (background script, worker, optional local server) carry
+  a code, translated in the panel (French / English).
+- The access rule of 3.0.4 is unchanged (finished games and replays only).
+
+How to test: open the replay of a finished Carcassonne game, click the 🏰 button, then
+"Analyser": the tile to be placed is shown in the panel header and the number of tiles
+left equals BGA's counter.
+
+
 Version 3.1.1 - Links to the author's book, welcome page
 
 - Links to the author's own book (the companion book of this extension): a button at the

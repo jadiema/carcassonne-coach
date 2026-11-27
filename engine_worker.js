@@ -33,7 +33,8 @@ self.onmessage = async (event) => {
   // v3.0.4 : refus d'une position non marquée comme terminée (avant même de charger Python)
   const m = state && state._meta;
   if (!m || m.gameFinished !== true || !["replay-url", "replay-mode", "game-end"].includes(m.finishedProof)) {
-    self.postMessage({ id, status: "error", error: "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)." });
+    self.postMessage({ id, status: "error", code: "not_finished",
+                       error: "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)." });
     return;
   }
   try {
@@ -48,6 +49,8 @@ self.onmessage = async (event) => {
     const out = JSON.parse(coach.analyze(JSON.stringify(state), sims, time, player));
     self.postMessage({ id, mode, ...out });
   } catch (err) {
-    self.postMessage({ id, kind, status: "error", error: "Moteur du navigateur : " + (err && err.message ? err.message : String(err)) });
+    const detail = err && err.message ? err.message : String(err);
+    // code traduit par le content script ; texte français en repli
+    self.postMessage({ id, kind, status: "error", code: "engine_failed", detail, error: "Moteur du navigateur : " + detail });
   }
 };

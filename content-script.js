@@ -63,6 +63,8 @@
       simulating: "⏳ Simulation en cours… ({s} s)",
       rerun: "🔄 Relancer",
       error: "Erreur : {m}",
+      tileHiddenSel: "La tuile de <strong>{name}</strong> est cachée de ce point de vue du replay. " +
+                     "Choisissez <strong>{other}</strong> dans « Je suis », ou ouvrez le replay du point de vue de {name}.",
       tileMissing: "⚠️ Tuile de <strong>{name}</strong> non détectée. " +
                    "L’analyse utilise votre tuile (<strong>{edges}</strong>).",
       tileInfo: "🎯 Tuile : <strong>{tile}</strong> — analyse pour <strong>{player}</strong>",
@@ -88,6 +90,8 @@
       pvSwitch: "⇄ Voir pour {name}",
       bagLine: "Sac : <strong>{n}</strong> tuiles",
       handKnown: "tuile en main : <strong>{l}</strong> (hors du sac)",
+      handKnown2: "tuiles tirées : <strong>{l}</strong> (hors du sac)",
+      hiddenTile: "+ 1 tuile tirée cachée (main de {name}), comptée avec le sac pour les probabilités",
       handUnknown: "pas de tuile en main",
       nextDraw: "prochain tirage du sac : <strong>{name}</strong>",
       nextDrawUnknown: "prochain tirage : joueur inconnu (supposé {name})",
@@ -103,7 +107,7 @@
       typesLeft: "{m} types",
       refHint: "Cliquez sur une famille pour en faire la référence.",
       bagEmpty: "Le sac est vide : plus aucun tirage.",
-      unknownTiles: "⚠️ {n} tuile(s) du plateau non reconnue(s) (tuiles 1re édition ?) : chiffres approximatifs.",
+      unknownTiles: "⚠️ {n} tuile(s) du plateau non reconnue(s) : chiffres approximatifs.",
       bagError: "Sac incohérent : {m}",
       holesTitle: "Trous du plateau",
       holesTip: "Cases vides qui touchent une structure ouverte du joueur (ville, route, pré où il a un partisan) " +
@@ -130,6 +134,26 @@
       legendMeeple: "♟ : meeple conseillé, compte tenu du prix d’un meeple en réserve",
       bookBtn1: "📖 Le livre du coach",
       bookBtn2: "Carcassonne, le jeu autrement : chaque calcul expliqué pas à pas",
+      // Erreurs renvoyées par le moteur (champ « code ») et détection de la tuile en main
+      close: "Fermer",
+      diagLine: "diagnostic : {path} · parent {top} · état {state}",
+      diagUnknown: "inconnu",
+      probaMissing: "probabilites.js absent",
+      bagTooMany: "trop de tuiles {l}",
+      err_not_finished: "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée).",
+      err_no_tile: "Pas de tuile en main détectée.",
+      err_bad_json: "Position illisible (JSON invalide).",
+      err_load_failed: "Position impossible à charger : {d}",
+      err_compute_failed: "Erreur de calcul : {d}",
+      err_engine_failed: "Moteur du navigateur : {d}",
+      err_job_lost: "Analyse perdue par le moteur : relancez-la.",
+      noTileEnd: "Partie terminée : toutes les tuiles sont posées, il n’y a plus de tuile à jouer.",
+      noTileReplay: "Aucune tuile à poser à ce moment du replay : avancez d’un coup " +
+                    "(la tuile tirée apparaît dans le bandeau).",
+      tileGraphics: "Graphisme des tuiles non reconnu : passez à la nouvelle édition dans les préférences de BGA",
+      tileImage: "image de la tuile : {pos}",
+      tileArtUnknown: "Image de la tuile en main non reconnue ({pos}). " +
+                      "Signalez-la en indiquant cette valeur.",
     },
     en: {
       notBga: "This page is not a Carcassonne game on BGA.",
@@ -175,6 +199,8 @@
       simulating: "⏳ Simulating… ({s} s)",
       rerun: "🔄 Run again",
       error: "Error: {m}",
+      tileHiddenSel: "<strong>{name}</strong>’s tile is hidden from this point of view of the replay. " +
+                     "Choose <strong>{other}</strong> in “I am”, or open the replay from {name}’s point of view.",
       tileMissing: "⚠️ <strong>{name}</strong>’s tile was not detected. " +
                    "The analysis uses your tile (<strong>{edges}</strong>).",
       tileInfo: "🎯 Tile: <strong>{tile}</strong> — analysis for <strong>{player}</strong>",
@@ -198,6 +224,8 @@
       pvSwitch: "⇄ View for {name}",
       bagLine: "Bag: <strong>{n}</strong> tiles",
       handKnown: "tile in hand: <strong>{l}</strong> (not in the bag)",
+      handKnown2: "tiles drawn: <strong>{l}</strong> (not in the bag)",
+      hiddenTile: "+ 1 hidden drawn tile ({name}’s hand), counted with the bag for the probabilities",
       handUnknown: "no tile in hand",
       nextDraw: "next draw from the bag: <strong>{name}</strong>",
       nextDrawUnknown: "next draw: unknown player (assumed {name})",
@@ -213,7 +241,7 @@
       typesLeft: "{m} types",
       refHint: "Click a family to make it the reference.",
       bagEmpty: "The bag is empty: no more draws.",
-      unknownTiles: "⚠️ {n} board tile(s) not recognised (1st edition tiles?): figures are approximate.",
+      unknownTiles: "⚠️ {n} board tile(s) not recognised: figures are approximate.",
       bagError: "Inconsistent bag: {m}",
       holesTitle: "Holes on the board",
       holesTip: "Empty squares next to an open structure of the player (city, road, field where they have a " +
@@ -240,11 +268,42 @@
       legendMeeple: "♟: suggested meeple, taking into account the price of a meeple in reserve",
       bookBtn1: "📖 The book behind the coach",
       bookBtn2: "Rethinking Carcassonne: every calculation explained step by step",
+      close: "Close",
+      diagLine: "diagnostic: {path} · parent {top} · state {state}",
+      diagUnknown: "unknown",
+      probaMissing: "probabilites.js missing",
+      bagTooMany: "too many tiles {l}",
+      err_not_finished: "Analysis refused: the game is not finished (no replay or proven end of game).",
+      err_no_tile: "No tile in hand detected.",
+      err_bad_json: "Unreadable position (invalid JSON).",
+      err_load_failed: "Could not load the position: {d}",
+      err_compute_failed: "Calculation error: {d}",
+      err_engine_failed: "Browser engine: {d}",
+      err_job_lost: "The engine lost the analysis: please run it again.",
+      noTileEnd: "Game over: all tiles have been placed, there is no tile left to play.",
+      noTileReplay: "No tile to place at this point of the replay: step forward one move " +
+                    "(the drawn tile appears in the title bar).",
+      tileGraphics: "Tile graphics not recognised: switch to the new edition in the BGA preferences",
+      tileImage: "tile image: {pos}",
+      tileArtUnknown: "Tile in hand not recognised ({pos}). " +
+                      "Please report it, quoting this value.",
     },
   };
   function t(key, vars = {}) {
     const s = (I18N[LANG] && I18N[LANG][key]) ?? I18N.fr[key] ?? key;
     return s.replace(/\{(\w+)\}/g, (_, k) => (vars[k] !== undefined ? vars[k] : ""));
+  }
+
+  // Erreur venue du moteur (worker, serveur local, background) : { error, code, detail }.
+  // Le code est traduit ; le texte brut (français, ou ancien serveur sans code) sert de repli.
+  // Renvoie du HTML sûr (le détail technique est échappé).
+  function engineErrorText(resp, fallbackKey) {
+    const code = resp && resp.code;
+    if (code && I18N.fr["err_" + code] !== undefined) {
+      return t("err_" + code, { d: escHtml((resp.detail != null ? resp.detail : resp.error) || "?") });
+    }
+    if (resp && resp.error) return escHtml(resp.error);
+    return t(fallbackKey || "analysisError");
   }
 
   // Renvois au livre : livre.js (CarcLivre) définit les liens et la table des chapitres.
@@ -344,54 +403,17 @@
     ffa500:"Jaune","000000":"Noir",
   };
 
-  // ============================================================
-  // BGA → Tile ID mapping (2nd edition)
-  // ============================================================
-  const BG_POS_TO_ID = {
-    "0% 0%":1,"6.66% 0%":2,"13.33% 0%":3,"20% 0%":4,
-    "26.66% 0%":5,"33.33% 0%":6,"40% 0%":7,"46.66% 0%":8,
-    "53.33% 0%":9,"60% 0%":10,"66.66% 0%":11,"73.33% 0%":12,
-    "80% 0%":13,"86.66% 0%":14,"93.33% 0%":15,"100% 0%":16,
-    "0% 11.11%":17,"6.66% 11.11%":18,"13.33% 11.11%":19,
-    "20% 11.11%":20,"26.66% 11.11%":21,"33.33% 11.11%":22,
-    "40% 11.11%":23,"46.66% 11.11%":24,"53.33% 11.11%":25,
-    "60% 11.11%":26,"66.66% 11.11%":27,"73.33% 11.11%":28,
-    "80% 11.11%":29,"86.66% 11.11%":30,"93.33% 11.11%":31,
-    "100% 11.11%":32,"0% 22.22%":33,"6.66% 22.22%":34,
-    "13.33% 22.22%":35,"20% 22.22%":36,"26.66% 22.22%":37,
-    "33.33% 22.22%":38,"40% 22.22%":39,"46.66% 22.22%":40,
-    "53.33% 22.22%":41,"60% 22.22%":42,"66.66% 22.22%":43,
-    "73.33% 22.22%":44,"80% 22.22%":45,"86.66% 22.22%":46,
-    "93.33% 22.22%":47,"100% 22.22%":48,"0% 33.33%":49,
-    "6.66% 33.33%":50,"13.33% 33.33%":51,"20% 33.33%":52,
-    "26.66% 33.33%":53,"33.33% 33.33%":54,"40% 33.33%":55,
-    "46.66% 33.33%":56,"53.33% 33.33%":57,"60% 33.33%":58,
-    "66.66% 33.33%":59,"73.33% 33.33%":60,"80% 33.33%":61,
-    "86.66% 33.33%":62,"93.33% 33.33%":63,"100% 33.33%":64,
-    "0% 44.44%":65,"6.66% 44.44%":66,"13.33% 44.44%":67,
-    "20% 44.44%":68,"26.66% 44.44%":69,"33.33% 44.44%":70,
-    "40% 44.44%":71,"46.66% 44.44%":72,
-  };
+  // Reconnaissance des tuiles (planches 1re et 2e édition, rotation) : tuiles.js
+  const TU = CarcTuiles;
+  const { styleToId, getRotation, tileIdToBgId } = TU;
 
   // ============================================================
   // HELPERS
   // ============================================================
-  function getRotation(transform) {
-    if (!transform || transform === "rotate(0deg)" || transform === "rotate(360deg)") return 0;
-    if (transform === "rotate(90deg)") return 1;
-    if (transform === "rotate(180deg)") return 2;
-    if (transform === "rotate(-90deg)" || transform === "rotate(270deg)") return 3;
-    return -1;
-  }
-
   function rotateEdges(edges, rotation) {
     const arr = edges.split("");
     for (let i = 0; i < rotation; i++) arr.unshift(arr.pop());
     return arr.join("");
-  }
-
-  function tileIdToBgId(id) {
-    return id.startsWith("tile_") ? Number(id.substring("tile_".length)) : null;
   }
 
   function parseCoord(placeId) {
@@ -412,22 +434,34 @@
     return COLOR_NAMES[hex] || hex;
   }
 
-  function shortenCoord(str) {
-    str = str.replace(/%/g, "");
-    const dot = str.indexOf(".");
-    return dot === -1 ? str : str.substring(0, dot) + "." + str.substring(dot + 1, dot + 3);
-  }
-
-  function styleToId(style) {
-    if (!style) return null;
-    const s = style.split(" ");
-    const key = shortenCoord(s[0]) + "% " + shortenCoord(s[1]) + "%";
-    return BG_POS_TO_ID[key] || null;
-  }
-
+  // Édition des tuiles affichées par la page : 1, 2, ou 0 (non indiquée)
   function getTilesEdition() {
-    const els = document.getElementsByClassName("tile_art");
-    return els && els.length > 0 && els[0].classList.contains("first_edition") ? 1 : 2;
+    const el = document.getElementsByClassName("tile_art")[0];
+    return el ? TU.editionFromClasses(c => el.classList.contains(c)) : 0;
+  }
+
+  // Édition de l'image d'un élément : sa classe, sinon celle des tuiles de la page.
+  function editionOf(el) {
+    const ed = el && el.classList ? TU.editionFromClasses(c => el.classList.contains(c)) : 0;
+    return ed || getTilesEdition();
+  }
+
+  // Image d'une tuile hors plateau → { style, edition } pour tuiles.js
+  function artOf(el) {
+    const style = el && el.style && el.style.backgroundPosition;
+    return style ? { style, edition: editionOf(el) } : null;
+  }
+
+  // Message expliquant l'absence de tuile en main (HTML, traduit).
+  function tileIssueText(issue) {
+    const k = issue && issue.kind;
+    const diag = issue && issue.pos
+      ? `<div style="margin-top:6px;font-size:10px;color:#7f849c">${t("tileImage", { pos: escHtml(issue.pos) })}</div>` : "";
+    if (k === "end") return t("noTileEnd");
+    if (k === "graphics") return t("tileGraphics") + diag;
+    if (k === "art") return t("tileArtUnknown", { pos: escHtml(issue.pos || "?") });
+    if (k === "replay") return t("noTileReplay");
+    return t("err_no_tile");
   }
 
   // ============================================================
@@ -490,63 +524,6 @@
         };
       });
 
-    // Current tile — lire depuis TOUTES les sources disponibles
-    // handtile0 : la tuile dans MA main (mon prochain coup)
-    // title_tile : la tuile que le joueur actif doit placer (affichée dans le bandeau)
-    // tile_current : la dernière tuile placée/en cours sur le plateau
-
-    const handEl = document.getElementById("handtile0");
-    const titleEl = document.getElementById("title_tile");
-    const tileCurrentEl = document.getElementById("tile_current");
-
-    const myTileId = handEl ? styleToId(handEl.style.backgroundPosition) : null;
-    const titleTileId = titleEl ? styleToId(titleEl.style.backgroundPosition) : null;
-
-    let activeTileId = null;
-    if (tileCurrentEl) {
-      const art = tileCurrentEl.querySelector(".tile_art");
-      if (art && art.style.backgroundPosition) {
-        activeTileId = styleToId(art.style.backgroundPosition);
-      }
-    }
-
-    // Déterminer les tuiles distinctes disponibles
-    const allTileIds = new Set([myTileId, titleTileId, activeTileId].filter(Boolean));
-
-    // La tuile du bandeau (title_tile) est typiquement celle du joueur actif
-    // handtile0 est MA tuile (celle du joueur connecté)
-    // On stocke les deux pour que le sélecteur "Je suis" choisisse
-    const connectedPlayerTileId = myTileId;
-    const activePlayerTileId = titleTileId || activeTileId;
-
-    // Par défaut, utiliser la tuile du joueur actif si disponible
-    const curId = activePlayerTileId || connectedPlayerTileId;
-    const currentTile = curId ? {
-      bgId: curId,
-      edges: TILES_DB[curId]?.type || "????",
-      shield: TILES_DB[curId]?.shield || false,
-      desc: TILES_DB[curId]?.desc || "Inconnue",
-    } : null;
-
-    // Stocker les deux tuiles pour le choix dans le panneau
-    const tileOptions = {};
-    if (connectedPlayerTileId && TILES_DB[connectedPlayerTileId]) {
-      tileOptions.myTile = {
-        bgId: connectedPlayerTileId,
-        edges: TILES_DB[connectedPlayerTileId]?.type || "????",
-        shield: TILES_DB[connectedPlayerTileId]?.shield || false,
-        desc: TILES_DB[connectedPlayerTileId]?.desc || "Inconnue",
-      };
-    }
-    if (activePlayerTileId && TILES_DB[activePlayerTileId] && activePlayerTileId !== connectedPlayerTileId) {
-      tileOptions.opponentTile = {
-        bgId: activePlayerTileId,
-        edges: TILES_DB[activePlayerTileId]?.type || "????",
-        shield: TILES_DB[activePlayerTileId]?.shield || false,
-        desc: TILES_DB[activePlayerTileId]?.desc || "Inconnue",
-      };
-    }
-
     // Free places — toutes les positions .place moins celles occupées par des tuiles
     const occupiedSet = new Set(boardTiles.map(t => t.location ? t.location.x + "," + t.location.y : null).filter(Boolean));
     const freePlaces = Array.from(mapContainer.getElementsByClassName("place"))
@@ -577,6 +554,25 @@
         const turnName = whoseTurn.textContent.trim();
         const matchedPlayer = players.find(p => turnName.includes(p.name));
         if (matchedPlayer) activePlayerId = matchedPlayer.id;
+      }
+    }
+    // Méthode 2b : joueur actif selon BGA (du point de vue du joueur actif, le
+    // bandeau dit « Vous / You / Sie… » au lieu de son nom : toutes langues)
+    if (!activePlayerId) {
+      const page = pageGlobals();
+      try {
+        const id = page && page.gameui && typeof page.gameui.getActivePlayerId === "function"
+          ? page.gameui.getActivePlayerId() : null;
+        if (id != null && players.some(p => p.id === String(id))) activePlayerId = String(id);
+      } catch (e) {}
+    }
+    // Méthode 2c : couleur du nom (ou du « Vous ») dans le bandeau = couleur du joueur
+    if (!activePlayerId) {
+      const spans = document.querySelectorAll("#pagemaintitletext span[style*='color']");
+      for (const sp of spans) {
+        const c = colorName(sp.style.color || "");
+        const byColor = players.filter(p => p.color === c);
+        if (byColor.length === 1) { activePlayerId = byColor[0].id; break; }
       }
     }
     // Méthode 3: animation pulsante sur le nom du joueur
@@ -638,13 +634,91 @@
 
     const loggedInPlayer = players.find(p => p.id === loggedInPlayerId) || null;
 
+    // Current tile — lire depuis TOUTES les sources disponibles
+    // handtile0 : la tuile dans MA main (mon prochain coup)
+    // title_tile : la tuile que le joueur actif doit placer (affichée dans le bandeau)
+    // tile_current : la dernière tuile placée/en cours sur le plateau
+
+    const handEl = document.getElementById("handtile0");
+    const titleEl = document.getElementById("title_tile");
+    const tileCurrentEl = document.getElementById("tile_current");
+
+    // Une image de tuile déjà posée n'est pas une tuile à jouer (BGA la laisse
+    // affichée entre deux coups du replay et en fin de partie) ; avec 72 tuiles
+    // posées, il n'y a plus rien à jouer. 1re ou 2e édition : voir tuiles.js.
+    // Tuile du panneau (#handtile0) : celle du joueur dont le panneau la contient.
+    // Si ce n'est pas le joueur actif, deux tuiles sont tirées hors du sac :
+    // celle du bandeau (joueur actif) et celle-ci (voir tuiles.js).
+    const handPanel = handEl && handEl.closest("[id^='overall_player_board_']");
+    const handOwnerId = (handPanel && (handPanel.id.match(/\d+/) || [])[0]) || loggedInPlayerId || null;
+    const handSeparate = handOwnerId && activePlayerId ? handOwnerId !== activePlayerId : null;
+    const { titleTileId, activeTileId, myTileId, drawnIds, tileIssue, readings } = TU.identifyTiles(
+      boardTiles.map(b => b.bgId),
+      { title: artOf(titleEl),
+        current: artOf(tileCurrentEl && tileCurrentEl.querySelector(".tile_art")),
+        hand: artOf(handEl) },
+      { handSeparate });
+    if (tileIssue && !opts.quiet) console.log("🏰 Coach: pas de tuile en main —", tileIssue, readings);
+
+    // Tuile tirée mais cachée : du point de vue du joueur actif, la prochaine
+    // tuile de l'adversaire est hors de la pioche sans être visible (tuiles.js).
+    const hiddenDrawnCount = TU.hiddenDrawn({ handMode: !!handEl, nPlayers: players.length,
+                                              placed: boardTiles.length, visible: drawnIds.length });
+    const visibleHolders = new Set();
+    if ((titleTileId || activeTileId) && activePlayerId) visibleHolders.add(activePlayerId);
+    if (myTileId && handOwnerId) visibleHolders.add(handOwnerId);
+    const hiddenHolder = hiddenDrawnCount === 1 ? players.find(p => !visibleHolders.has(p.id)) || null : null;
+
+    // La tuile du bandeau (title_tile) est typiquement celle du joueur actif
+    // handtile0 est MA tuile (celle du joueur connecté)
+    // On stocke les deux pour que le sélecteur "Je suis" choisisse
+    const connectedPlayerTileId = myTileId;
+    const activePlayerTileId = titleTileId || activeTileId;
+
+    // Par défaut, utiliser la tuile du joueur actif si disponible
+    const curId = activePlayerTileId || connectedPlayerTileId;
+    const currentTile = curId ? {
+      bgId: curId,
+      edges: TILES_DB[curId]?.type || "????",
+      shield: TILES_DB[curId]?.shield || false,
+      desc: TILES_DB[curId]?.desc || "Inconnue",
+    } : null;
+
+    // Stocker les deux tuiles pour le choix dans le panneau
+    const tileOptions = {};
+    if (connectedPlayerTileId && TILES_DB[connectedPlayerTileId]) {
+      tileOptions.myTile = {
+        bgId: connectedPlayerTileId,
+        edges: TILES_DB[connectedPlayerTileId]?.type || "????",
+        shield: TILES_DB[connectedPlayerTileId]?.shield || false,
+        desc: TILES_DB[connectedPlayerTileId]?.desc || "Inconnue",
+      };
+    }
+    if (activePlayerTileId && TILES_DB[activePlayerTileId] && activePlayerTileId !== connectedPlayerTileId) {
+      tileOptions.opponentTile = {
+        bgId: activePlayerTileId,
+        edges: TILES_DB[activePlayerTileId]?.type || "????",
+        shield: TILES_DB[activePlayerTileId]?.shield || false,
+        desc: TILES_DB[activePlayerTileId]?.desc || "Inconnue",
+      };
+    }
+
+    // Tuile de chaque joueur, quand on sait à qui elle est : celle du bandeau au
+    // joueur actif, celle du panneau au joueur dont c'est le panneau.
+    const tileOf = id => (id && TILES_DB[id] ? { bgId: id, edges: TILES_DB[id].type,
+                                                 shield: TILES_DB[id].shield || false, desc: TILES_DB[id].desc } : null);
+    const tilesByPlayer = {};
+    if (activePlayerId && tileOf(activePlayerTileId)) tilesByPlayer[activePlayerId] = tileOf(activePlayerTileId);
+    if (handOwnerId && tileOf(myTileId) && !tilesByPlayer[handOwnerId]) tilesByPlayer[handOwnerId] = tileOf(myTileId);
+
     // Move log
     const logContainer = document.getElementById("logs");
     const logEntries = Array.from(logContainer.getElementsByClassName("log  log_replayable")).reverse();
     const moveLog = logEntries.map(entry => {
       const art = entry.querySelector(".tile_art");
       if (!art) return null;
-      const bgId = styleToId(art.style.backgroundPosition);
+      // 1re édition : pas d'identifiant (retrouvé par replay_bga.py), jamais un faux
+      const bgId = styleToId(art.style.backgroundPosition, editionOf(art));
       const ps = entry.querySelector("span.playername span.playername");
       return { player: ps?.textContent?.trim() || "?", bgId, text: entry.textContent.replace(/\s+/g, " ").trim() };
     }).filter(Boolean);
@@ -679,6 +753,11 @@
       })),
       currentTile,
       tileOptions,
+      tilesByPlayer,
+      tileIssue,
+      drawnIds,          // tuiles tirées hors du sac (bandeau, panneau du joueur)
+      hiddenDrawn: hiddenDrawnCount,                       // tirées mais cachées (main adverse)
+      hiddenHolder: hiddenHolder ? { id: hiddenHolder.id, name: hiddenHolder.name } : null,
       board: boardTiles,
       freePlaces: freePlacesUnique,
       activePlayer: activePlayer ? { id: activePlayer.id, name: activePlayer.name, color: activePlayer.color } : null,
@@ -786,8 +865,9 @@
     return {
       ok: false,
       reason: t("blocked") +
-              `<div style="margin-top:8px;font-size:10px;color:#7f849c">diagnostic : ${escHtml(location.pathname)}` +
-              ` · parent ${escHtml(top)} · état ${escHtml(bgaGameStateName() || "inconnu")}</div>`,
+              `<div style="margin-top:8px;font-size:10px;color:#7f849c">` +
+              t("diagLine", { path: escHtml(location.pathname), top: escHtml(top),
+                              state: escHtml(bgaGameStateName() || t("diagUnknown")) }) + `</div>`,
     };
   }
 
@@ -820,14 +900,14 @@
     });
 
     if (!startResp || !startResp.ok) {
-      throw new Error(startResp?.error || t("startFail"));
+      throw new Error(engineErrorText(startResp, "startFail"));
     }
 
     const jobId = startResp.data.job_id;
     if (!jobId) {
-      // Réponse directe (pas de job — ancienne API ?)
+      // Réponse directe (pas de job — ancienne API ?) ou refus du serveur local
       if (startResp.data.moves) return startResp.data;
-      throw new Error(startResp.data.error || t("noJob"));
+      throw new Error(engineErrorText(startResp.data, "noJob"));
     }
 
     // 2. Polling toutes les 2 secondes jusqu'au résultat
@@ -847,7 +927,10 @@
         return data.result;
       }
       if (data.status === "error") {
-        throw new Error(data.error || t("analysisError"));
+        throw new Error(engineErrorText(data, "analysisError"));
+      }
+      if (data.status === "not_found") {
+        throw new Error(t("err_job_lost"));    // serveur relancé, ou extension rechargée
       }
       // status === "running" → on continue le polling
     }
@@ -922,16 +1005,24 @@
 
   function derivePosition(st) {
     const hand = CP && st.currentTile && CP.letterOfBgaId(st.currentTile.bgId) ? st.currentTile : null;
+    // Tuiles tirées hors du sac : celle du joueur actif (bandeau) et, si BGA
+    // l'affiche, la prochaine tuile de l'autre joueur (son panneau).
+    const drawn = CP ? (st.drawnIds || (hand ? [hand.bgId] : [])).filter(id => CP.letterOfBgaId(id)) : [];
     let bag = null, bagError = null;
     if (CP) {
-      try { bag = CP.bagCounts(st.board.map(b => b.bgId), hand ? [hand.bgId] : []); }
-      catch (e) { bagError = e.message; }
+      try { bag = CP.bagCounts(st.board.map(b => b.bgId), drawn); }
+      catch (e) { bagError = e.letters ? t("bagTooMany", { l: e.letters.join(", ") }) : e.message; }
     }
+    // Tuile cachée (main adverse) : tirée au hasard parmi les tuiles non vues.
+    // Pour les probabilités de type, elle compte avec le sac (même composition) ;
+    // la pioche, elle, en a une de moins : c'est le compteur de BGA.
+    const hidden = bag ? Math.min(st.hiddenDrawn || 0, bag.N) : 0;
     return {
-      st, hand, bag, bagError,
+      st, hand, drawn, hidden, bag, bagError,
       placed: st.board.length,
-      // Tuiles restantes de l'en-tête = Sac (onglet Probabilités) + tuile en main
-      remaining: bag ? bag.N + (hand ? 1 : 0) : st.remainingCount,
+      // Tuiles restantes de l'en-tête = pioche = compteur « tuiles restantes »
+      // de BGA ; posées + restantes + tirées (visibles et cachées) = 72.
+      remaining: bag ? bag.N - hidden : st.remainingCount,
       unknown: CP ? st.board.filter(b => !CP.letterOfBgaId(b.bgId)).length : 0,
     };
   }
@@ -940,26 +1031,26 @@
     return JSON.stringify([
       st.board.map(b => [b.bgId, b.location && b.location.x, b.location && b.location.y,
                          b.meeple && b.meeple.color, b.meeple && b.meeple.spot]),
-      st.currentTile && st.currentTile.bgId, st.activePlayer && st.activePlayer.id,
+      st.currentTile && st.currentTile.bgId, st.drawnIds, st.hiddenDrawn, st.activePlayer && st.activePlayer.id,
       st.players.map(p => [p.id, p.score, p.meeplesAvailable]),
     ]);
   }
 
   // Vérification interne : l'en-tête et l'onglet Probabilités doivent afficher
-  // le même nombre de tuiles restantes (Sac + 1 s'il y a une tuile en main).
+  // le même nombre de tuiles restantes (le Sac), et posées + Sac + tirées = 72.
   const shown = { sig: null, header: null, proba: null };
   function noteShown(sig, part, value) {
     if (shown.sig !== sig) { shown.sig = sig; shown.header = shown.proba = null; }
     shown[part] = value;
     if (shown.header === null || shown.proba === null) return;
-    const expected = shown.proba.N + (shown.proba.hand ? 1 : 0);
-    if (shown.header.remaining !== expected) {
+    if (shown.header.remaining !== shown.proba.pile) {
       console.warn(`🏰 Coach : incohérence — en-tête ${shown.header.remaining} restantes, ` +
-                   `onglet Probabilités Sac ${shown.proba.N}${shown.proba.hand ? " + 1 en main" : ""}`);
+                   `onglet Probabilités pioche ${shown.proba.pile}`);
     }
-    if (shown.header.unknown === 0 && shown.header.placed + shown.header.remaining !== 72) {
-      console.warn(`🏰 Coach : incohérence — ${shown.header.placed} posées + ` +
-                   `${shown.header.remaining} restantes ≠ 72`);
+    const total = shown.header.placed + shown.header.remaining + shown.header.drawn + shown.header.hidden;
+    if (shown.header.unknown === 0 && total !== 72) {
+      console.warn(`🏰 Coach : incohérence — ${shown.header.placed} posées + ${shown.header.remaining} ` +
+                   `restantes + ${shown.header.drawn} tirée(s) + ${shown.header.hidden} cachée(s) ≠ 72`);
     }
   }
 
@@ -1034,28 +1125,34 @@
       const name = i => (players[i] ? escHtml(players[i].name) : "?");
 
       // --- Sac (calculé une seule fois dans derivePosition, comme l'en-tête) ---
-      const { hand, bag, unknown } = pos;
+      const { hand, drawn, hidden, bag, unknown } = pos;
       if (!bag) {
         head.innerHTML = `<div class="carc-error">${t("bagError", { m: escHtml(pos.bagError || "?") })}</div>`;
         tableBox.innerHTML = holesBox.innerHTML = "";
         return;
       }
       const { counts, N } = bag;
-      noteShown(pos.sig, "proba", { N, hand: !!hand });
+      // Pioche = sac moins la tuile cachée (tirages restants) ; les probabilités
+      // de type se calculent sur les N tuiles non vues (la cachée en fait partie).
+      const pile = N - hidden;
+      noteShown(pos.sig, "proba", { N, pile, hand: !!hand });
 
-      // Qui tire la prochaine tuile du sac ? Celui qui n'a pas la tuile en main ;
-      // sans tuile en main, le joueur dont c'est le tour.
+      // Qui tire la prochaine tuile du sac ? Celui qui n'a pas de tuile en main :
+      // une tuile tirée (celle du joueur actif) → l'autre joueur ; aucune, ou
+      // les deux joueurs ont déjà la leur → le joueur actif (après sa pose).
       const activeIdx = st.activePlayer ? players.findIndex(p => p.id === st.activePlayer.id) : -1;
       let nextIdx = null;
-      if (activeIdx >= 0 && players.length === 2) nextIdx = hand ? 1 - activeIdx : activeIdx;
+      if (activeIdx >= 0 && players.length === 2) nextIdx = drawn.length + hidden === 1 ? 1 - activeIdx : activeIdx;
       const iDrawNext = nextIdx === null ? true : nextIdx === me;
-      const kEff = P.effectiveK(k, N, iDrawNext);
-      const myDraws = P.myRemainingDraws(N, iDrawNext);
+      const kEff = P.effectiveK(k, pile, iDrawNext);
+      const myDraws = P.myRemainingDraws(pile, iDrawNext);
 
       head.innerHTML = `
         <div class="carc-proba-line">${t("pvLabel", { name: name(me) })}</div>
-        <div class="carc-proba-line">${t("bagLine", { n: N })} ·
-          ${hand ? t("handKnown", { l: P.letterOfBgaId(hand.bgId) }) : t("handUnknown")} ·
+        <div class="carc-proba-line">${t("bagLine", { n: pile })} ·
+          ${hidden ? t("hiddenTile", { name: st.hiddenHolder ? escHtml(st.hiddenHolder.name) : "?" }) + " ·" : ""}
+          ${drawn.length > 1 ? t("handKnown2", { l: drawn.map(id => P.letterOfBgaId(id)).join(", ") })
+            : drawn.length ? t("handKnown", { l: P.letterOfBgaId(drawn[0]) }) : t("handUnknown")} ·
           ${nextIdx === null ? t("nextDrawUnknown", { name: name(me) }) : t("nextDraw", { name: name(nextIdx) })}
           <span data-ch="sac"></span></div>
         ${unknown ? `<div class="carc-proba-warn">${t("unknownTiles", { n: unknown })}</div>` : ""}`;
@@ -1141,7 +1238,7 @@
       const title = `<div class="carc-proba-subtitle" title="${escHtml(t("holesTip"))}">
           ${t("holesTitle")} <span class="carc-proba-info">ⓘ</span> <span data-ch="trous"></span></div>`;
       if (!resp || !resp.ok) {
-        holesBox.innerHTML = title + `<div class="carc-error">${t("holesError", { m: escHtml((resp && resp.error) || "?") })}</div>`; fillCh(holesBox);
+        holesBox.innerHTML = title + `<div class="carc-error">${t("holesError", { m: engineErrorText(resp, "analysisError") })}</div>`; fillCh(holesBox);
         return;
       }
       const holes = (resp.data && resp.data.holes) || [];
@@ -1173,7 +1270,7 @@
     let lastPos = null, visible = false;
     function refresh() {
       if (!visible || !lastPos) return;
-      if (!P) { head.innerHTML = `<div class="carc-error">probabilites.js absent</div>`; return; }
+      if (!P) { head.innerHTML = `<div class="carc-error">${t("probaMissing")}</div>`; return; }
       if (lastPos.blocked) {
         holesReq++;
         head.innerHTML = `<div class="carc-error" style="font-size:13px">⏸️ ${lastPos.error}</div>`;
@@ -1290,7 +1387,8 @@
         add(`<span class="carc-stat-value">${escHtml(p.name)}</span> ` +
             `<span data-k="p${i}">${p.score}pts · ${p.meeplesAvailable}♟</span>`);
       });
-      noteShown(pos.sig, "header", { remaining: pos.remaining, placed: pos.placed, unknown: pos.unknown });
+      noteShown(pos.sig, "header", { remaining: pos.remaining, placed: pos.placed, unknown: pos.unknown,
+                                       drawn: (pos.drawn || []).length, hidden: pos.hidden || 0 });
     }
     renderStats(derivePosition(state));
 
@@ -1419,6 +1517,13 @@
         analyzeBtn.textContent = t("analyze");
         return;
       }
+      // Pas de tuile à jouer : cause la plus probable, sans appeler le moteur
+      if (!freshState.currentTile) {
+        resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">${tileIssueText(freshState.tileIssue)}</div>`;
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = t("analyze");
+        return;
+      }
 
       const serverUp = await checkServer();
       if (!serverUp) {
@@ -1440,8 +1545,21 @@
       const opts = freshState.tileOptions || {};
       const isSelectingSelf = loggedIn && selectedPlayer && loggedIn.id === selectedPlayer.id;
 
-      // Si on sélectionne l'adversaire et qu'on a sa tuile, l'utiliser
-      if (!isSelectingSelf && opts.opponentTile) {
+      const byPlayer = freshState.tilesByPlayer || {};
+      if (selectedPlayer && byPlayer[selectedPlayer.id]) {
+        // Tuile du joueur choisi, d'après le bandeau ou son panneau
+        freshState.currentTile = byPlayer[selectedPlayer.id];
+      } else if (selectedPlayer && freshState.activePlayer && Object.keys(byPlayer).length) {
+        // Sa tuile est tirée mais cachée de ce point de vue : analyser la tuile
+        // d'un autre joueur n'aurait pas de sens.
+        const other = freshState.players.find(p => p.id !== selectedPlayer.id && byPlayer[p.id]);
+        resultsDiv.innerHTML = `<div class="carc-error" style="font-size:13px">${t("tileHiddenSel", {
+          name: escHtml(selectedPlayer.name), other: escHtml(other ? other.name : "?") })}</div>`;
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = t("analyze");
+        return;
+      } else if (!isSelectingSelf && opts.opponentTile) {
+        // Ancienne règle (joueurs des tuiles inconnus) : tuile adverse si détectée
         freshState.currentTile = opts.opponentTile;
       } else if (isSelectingSelf && opts.myTile) {
         freshState.currentTile = opts.myTile;
@@ -1467,7 +1585,8 @@
 
       // Avertissement si trop de tuiles restantes
       let earlyWarning = "";
-      const remaining = freshState.remainingCount || 0;
+      // Même compte que l'en-tête et que BGA : tuiles encore dans le sac
+      const remaining = derivePosition(freshState).remaining || 0;
       if (remaining > 40) {
         earlyWarning = `<div style="background:#1e3a5f;color:#89b4fa;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px;line-height:1.5">
           ${t("early", { n: remaining })}
@@ -1858,7 +1977,7 @@
     `;
     panel.innerHTML = `
       <div class="carc-error" style="margin-bottom:12px">❌ ${message}</div>
-      <button class="carc-btn carc-btn-secondary" style="width:100%">Fermer</button>
+      <button class="carc-btn carc-btn-secondary" style="width:100%">${t("close")}</button>
     `;
     panel.querySelector("button").addEventListener("click", removeModal);
     document.body.append(panel);

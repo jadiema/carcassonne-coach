@@ -18,6 +18,9 @@ function isMarkedFinished(state) {
   return !!m && m.gameFinished === true && FINISHED_PROOFS.includes(m.finishedProof);
 }
 const NOT_FINISHED = "Analyse refusée : la position n’est pas marquée comme issue d’une partie terminée ou d’un replay.";
+// Les erreurs portent un « code » que le content script traduit (FR/EN) ; le texte
+// français reste en repli.
+const engineError = (detail) => ({ error: "Moteur du navigateur : " + detail, code: "engine_failed", detail });
 
 // Page de bienvenue locale : une seule fois, à la première installation.
 // Jamais lors d'une mise à jour (reason "update") ni d'une mise à jour du navigateur.
@@ -38,7 +41,8 @@ function ensureWorker() {
   worker.onmessage = (e) => {
     const { id, ...rest } = e.data;
     if (holeRequests[id]) {
-      holeRequests[id](rest.status === "done" ? { ok: true, data: rest } : { ok: false, error: rest.error });
+      holeRequests[id](rest.status === "done" ? { ok: true, data: rest }
+                                              : { ok: false, error: rest.error, code: rest.code, detail: rest.detail });
       delete holeRequests[id];
       return;
     }
@@ -47,11 +51,11 @@ function ensureWorker() {
   worker.onerror = (e) => {
     for (const id of Object.keys(browserJobs)) {
       if (browserJobs[id].status === "running") {
-        browserJobs[id] = { status: "error", error: "Moteur du navigateur : " + (e.message || "erreur") };
+        browserJobs[id] = { status: "error", ...engineError(e.message || "?") };
       }
     }
     for (const id of Object.keys(holeRequests)) {
-      holeRequests[id]({ ok: false, error: "Moteur du navigateur : " + (e.message || "erreur") });
+      holeRequests[id]({ ok: false, ...engineError(e.message || "?") });
       delete holeRequests[id];
     }
     worker = null;
@@ -89,7 +93,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Onglet « Probabilités » : trous réels du plateau (légalité du moteur, sans MCTS)
   if (message.type === "board-holes") {
     if (!isMarkedFinished(message.state)) {
-      sendResponse({ ok: false, error: NOT_FINISHED });
+      sendResponse({ ok: false, error: NOT_FINISHED, code: "not_finished" });
       return;
     }
     serverHealth().then(up => {
@@ -101,7 +105,8 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
           signal: AbortSignal.timeout(15000),
         })
           .then(r => r.json())
-          .then(data => sendResponse(data.status === "done" ? { ok: true, data } : { ok: false, error: data.error }))
+          .then(data => sendResponse(data.status === "done" ? { ok: true, data }
+                                                     : { ok: false, error: data.error, code: data.code, detail: data.detail }))
           .catch(err => sendResponse({ ok: false, error: err.message }));
         return;
       }
@@ -116,7 +121,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
   // Lancer une analyse (retour immédiat avec job_id)
   if (message.type === "start-analysis") {
     if (!isMarkedFinished(message.state)) {
-      sendResponse({ ok: false, error: NOT_FINISHED });
+      sendResponse({ ok: false, error: NOT_FINISHED, code: "not_finished" });
       return;
     }
     serverHealth().then(up => {

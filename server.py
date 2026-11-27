@@ -87,11 +87,13 @@ def holes():
     payload = request.get_json(silent=True) or {}
     data = payload.get("state")
     if not isinstance(data, dict) or not is_marked_finished(data):
-        return jsonify({"error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}), 403
+        return jsonify({"code": "not_finished",
+                        "error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}), 403
     try:
         return jsonify(board_holes(data, int(payload.get("player", 0)), payload.get("bag") or {}))
     except Exception as e:
-        return jsonify({"status": "error", "error": f"Erreur de calcul : {e}"}), 400
+        return jsonify({"status": "error", "code": "compute_failed", "detail": str(e),
+                        "error": f"Erreur de calcul : {e}"}), 400
 
 
 @app.route("/analyze", methods=["POST"])
@@ -99,9 +101,10 @@ def analyze():
     """Lance l'analyse dans un thread et retourne immédiatement un job_id."""
     data = request.get_json()
     if not data:
-        return jsonify({"error": "JSON invalide"}), 400
+        return jsonify({"code": "bad_json", "error": "JSON invalide"}), 400
     if not is_marked_finished(data):
-        return jsonify({"error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}), 403
+        return jsonify({"code": "not_finished",
+                        "error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}), 403
 
     sims = request.args.get("sims", 1000, type=int)
     time_limit = request.args.get("time", 10, type=float)
@@ -110,10 +113,10 @@ def analyze():
     try:
         state = GameState.from_json(data)
     except Exception as e:
-        return jsonify({"error": f"Erreur de chargement: {str(e)}"}), 400
+        return jsonify({"code": "load_failed", "detail": str(e), "error": f"Erreur de chargement: {str(e)}"}), 400
 
     if not state.current_tile:
-        return jsonify({"error": "Pas de tuile en main détectée"}), 400
+        return jsonify({"code": "no_tile", "error": "Pas de tuile en main détectée"}), 400
 
     # Log diagnostic
     print(f"\n📊 Position chargée: {len(state.board)} tuiles, {len(state.draw_pile)} en pioche")
@@ -183,7 +186,7 @@ def analyze():
             }
             print(f"   ✅ Job {job_id} terminé en {elapsed:.1f}s")
         except Exception as e:
-            jobs[job_id] = {"status": "error", "error": str(e)}
+            jobs[job_id] = {"status": "error", "code": "compute_failed", "detail": str(e), "error": str(e)}
             print(f"   ❌ Job {job_id} erreur: {e}")
 
     thread = threading.Thread(target=run_analysis, daemon=True)
@@ -206,7 +209,8 @@ def get_result(job_id):
                         "time_limit": job.get("time_limit", 0)})
 
     if job["status"] == "error":
-        result = jsonify({"status": "error", "error": job["error"]})
+        result = jsonify({"status": "error", "error": job["error"],
+                          "code": job.get("code"), "detail": job.get("detail")})
         del jobs[job_id]  # Nettoyer
         return result
 

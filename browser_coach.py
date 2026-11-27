@@ -135,6 +135,7 @@ def board_holes(data: dict, player_idx: int, bag: dict) -> dict:
     calculé par probabilites.js : le même sac que les familles."""
     if not is_marked_finished(data):
         return {"status": "error",
+                "code": "not_finished",
                 "error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."}
     state = E.GameState.from_json(data)
     return holes_for_state(state, int(player_idx), bag)
@@ -228,10 +229,11 @@ def analyze(state_json: str, sims: int = 1000, time_limit: float = 10.0, player_
     data = json.loads(state_json)
     if not is_marked_finished(data):
         return json.dumps({"status": "error",
+                           "code": "not_finished",
                            "error": "Analyse refusée : partie non terminée (ni replay ni fin de partie prouvée)."})
     state = E.GameState.from_json(data)
     if not state.current_tile:
-        return json.dumps({"status": "error", "error": "Pas de tuile en main détectée"})
+        return json.dumps({"status": "error", "code": "no_tile", "error": "Pas de tuile en main détectée"})
 
     info = {
         "players": [{"name": state.player_names[i], "score": state.scores[i],

@@ -13,6 +13,8 @@ Langue du projet : **français** (code commenté en français, messages et docs 
   - `content-script.js` : lit la position sur BGA, panneau du coach (onglets Probabilités et
     Analyse), bouton DISCLAIMER.
   - `probabilites.js` : calculs de l'onglet Probabilités (chapitres 1 à 3 du livre).
+  - `tuiles.js` : reconnaissance des tuiles (planches 1re et 2e édition, rotation, tuiles tirées
+    visibles ou cachées), sans DOM ; testé par `tests/tuiles.test.js`.
   - `background.js` : utilise le serveur local s'il tourne (port 5555), sinon le moteur
     intégré au navigateur.
   - `engine_worker.js` + `pyodide/` : Python (Pyodide 0.26.4) + NumPy dans un Web Worker.
@@ -50,10 +52,20 @@ python selfplay.py --workers 4                     # auto-jeu (la nuit ; Ctrl+C 
 python neural_evaluator.py train parties 30        # entraînement (humain + auto-jeu)
 python evaluate_model.py parties --step 2          # banc de test : top1/top3 vs joueurs forts
 python verify_torch_free.py parties                # réseau NumPy = réseau PyTorch
+node --test tests/probabilites.test.js tests/tuiles.test.js   # tests de l'extension
+python tests/test_holes.py                         # trous du plateau
 ```
 
-## État actuel (3.1.1)
+## État actuel (3.1.2)
 
+- Reconnaissance des tuiles (3.1.2) : `tuiles.js`. Plateau lu par l'id `tile_N` (indépendant du
+  graphisme) ; tuile en main lue par la position de l'image, planche 2e édition (`BG_POS_TO_ID`)
+  ou 1re édition (`ED1_POS_TO_LETTER`, copie figée de `ed1_art_table.json`, vérifiée par un test).
+  Dans un replay, le graphisme est celui des préférences du joueur dont on prend le point de vue.
+  BGA montre deux tuiles tirées (bandeau = joueur actif, panneau = prochaine tuile de l'autre) ;
+  du point de vue du joueur actif, celle de l'adversaire est cachée. En-tête « restantes » = pioche
+  = compteur de BGA ; les probabilités de type portent sur les tuiles non vues (cachée comprise).
+  Erreurs du moteur avec un `code` traduit FR/EN dans le panneau.
 - Extension 3.1.1 : réseau **v33** (tête policy + tête value), entraîné sur les parties de
   joueurs forts et l'auto-jeu. Validation (15 parties, 989 positions), case seule :
   top1 41,2 %, top3 71,0 % (heuristique : 35,6 % / 57,0 %).

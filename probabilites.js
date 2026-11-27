@@ -100,7 +100,12 @@
     }
     if (!startSeen) counts[START_TILE]--;
     const negative = LETTERS.filter(l => counts[l] < 0);
-    if (negative.length) throw new Error("Sac incohérent : trop de tuiles " + negative.join(", "));
+    if (negative.length) {
+      // letters : pour le message traduit du panneau (le texte reste en français)
+      const err = new Error("Sac incohérent : trop de tuiles " + negative.join(", "));
+      err.letters = negative;
+      throw err;
+    }
     const N = LETTERS.reduce((s, l) => s + counts[l], 0);
     return { counts, N, unknown };
   }
