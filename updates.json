@@ -3,9 +3,9 @@
     "jgrisolia@free.fr": {
       "updates": [
         {
-          "version": "3.1.1",
-          "update_link": "https://github.com/jadiema/carcassonne-coach/releases/download/v3.1.1/carcassonne-coach.xpi",
-          "update_hash": "sha256:cd58648a2f034d39ea21fc3089b32868cb05ee31e007ed16f884ae14f416e6dc"
+          "version": "3.1.2",
+          "update_link": "https://github.com/jadiema/carcassonne-coach/releases/download/v3.1.2/carcassonne-coach.xpi",
+          "update_hash": "sha256:cf5b181ce01cc938499bda92f95d82863c13038ef18082006f632f68bba9b1f3"
         }
       ]
     }

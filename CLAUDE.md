@@ -8,7 +8,7 @@ Langue du projet : **français** (code commenté en français, messages et docs 
 
 ## Architecture
 
-- **Extension Firefox** (Manifest V3, identifiant `jgrisolia@free.fr`, version 3.1.1 signée
+- **Extension Firefox** (Manifest V3, identifiant `jgrisolia@free.fr`, version 3.1.2 signée
   par Mozilla en mode non répertorié, mise à jour automatique via `updates.json`) :
   - `content-script.js` : lit la position sur BGA, panneau du coach (onglets Probabilités et
     Analyse), bouton DISCLAIMER.
